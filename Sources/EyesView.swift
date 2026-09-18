@@ -145,7 +145,7 @@ struct EyesCanvas: View {
 
         if e.lower > 0.01 {
             let top: CGFloat = rect.maxY - e.lower * eh * 1.05
-            g.fill(Path(ellipseIn: CGRect(x: rect.minX - ew * 0.3, y: top, width: ew * 1.6, height: eh * 1.4)), with: .color(.black))
+            g.fill(Path(ellipseIn: CGRect(x: rect.minX - ew * 0.7, y: top, width: ew * 2.4, height: eh * 1.2)), with: .color(.black))
         }
     }
 }
