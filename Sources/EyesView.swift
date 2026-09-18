@@ -30,14 +30,14 @@ struct EyesCanvas: View {
                 EyesCanvas.draw(f, iris: iris, in: &ctx, size: size)
             }
         }
-        .opacity(dimmed ? 0.55 : 1)
+        .opacity(dimmed ? 0.82 : 1)
         .animation(.easeInOut(duration: 1.2), value: dimmed)
     }
 
     static func draw(_ f: Brain.Frame, iris: IrisStyle, in ctx: inout GraphicsContext, size: CGSize) {
-        let s = min(size.width, size.height * 0.62) / 390
-        let w = 104 * s, h = 124 * s
-        let gap = 70 * s
+        let s = min(size.width, size.height * 0.75) / 440
+        let w = 136 * s, h = 160 * s
+        let gap = 88 * s
         let center = CGPoint(x: size.width / 2 + f.gaze.x * 10 * s,
                              y: size.height * 0.44 + f.gaze.y * 8 * s + f.bob * s)
         let lc = CGPoint(x: center.x - gap, y: center.y)

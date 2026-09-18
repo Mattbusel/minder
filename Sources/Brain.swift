@@ -118,6 +118,7 @@ final class Brain {
     }
 
     func step(at t: Double) -> Frame {
+        if lastTime == nil { lastInteraction = t; nextBlinkAt = t + 2; nextMoodAt = t + 25 }
         let dt = CGFloat(min(max(t - (lastTime ?? t), 0), 1.0 / 20))
         lastTime = t
 

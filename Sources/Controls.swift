@@ -155,7 +155,7 @@ struct SettingsSheet: View {
 
                 section("Eyes") {
                     EyesCanvas(brain: preview, iris: IrisStyle.named(irisID))
-                        .frame(height: 150)
+                        .frame(height: 200)
                         .allowsHitTesting(false)
                     HStack(spacing: 0) {
                         ForEach(IrisStyle.all) { style in
