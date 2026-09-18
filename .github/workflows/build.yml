@@ -59,21 +59,29 @@ jobs:
           sleep 6
           xcrun simctl io "$udid" screenshot "shots/03.png"
           xcrun simctl terminate "$udid" com.mattbusel.minder || true
-          xcrun simctl launch "$udid" com.mattbusel.minder -shot idle -expr sleepy
+          xcrun simctl launch "$udid" com.mattbusel.minder -shot settings
           sleep 6
           xcrun simctl io "$udid" screenshot "shots/04.png"
           xcrun simctl terminate "$udid" com.mattbusel.minder || true
-          xcrun simctl launch "$udid" com.mattbusel.minder -shot settings
+          xcrun simctl launch "$udid" com.mattbusel.minder -shot work -preset Robot
           sleep 6
           xcrun simctl io "$udid" screenshot "shots/05.png"
           xcrun simctl terminate "$udid" com.mattbusel.minder || true
-          xcrun simctl launch "$udid" com.mattbusel.minder -shot work -expr surprised
+          xcrun simctl launch "$udid" com.mattbusel.minder -shot idle -preset Cat -expr curious
           sleep 6
           xcrun simctl io "$udid" screenshot "shots/06.png"
           xcrun simctl terminate "$udid" com.mattbusel.minder || true
-          xcrun simctl launch "$udid" com.mattbusel.minder -shot work -expr stern
+          xcrun simctl launch "$udid" com.mattbusel.minder -shot work -preset Crush -expr happy
           sleep 6
           xcrun simctl io "$udid" screenshot "shots/07.png"
+          xcrun simctl terminate "$udid" com.mattbusel.minder || true
+          xcrun simctl launch "$udid" com.mattbusel.minder -shot idle -preset Night_owl -expr sleepy
+          sleep 6
+          xcrun simctl io "$udid" screenshot "shots/08.png"
+          xcrun simctl terminate "$udid" com.mattbusel.minder || true
+          xcrun simctl launch "$udid" com.mattbusel.minder -shot work -preset Grump -expr stern
+          sleep 6
+          xcrun simctl io "$udid" screenshot "shots/09.png"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

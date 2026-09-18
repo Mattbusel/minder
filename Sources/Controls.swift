@@ -128,7 +128,8 @@ private struct KnobEyes: View {
 }
 
 struct SettingsSheet: View {
-    @Binding var irisID: String
+    @State private var look = Look.shared
+    private var irisID: String { look.irisID }
     @Binding var cameraOn: Bool
     @Binding var motionOn: Bool
     @Binding var hapticsOn: Bool
@@ -151,32 +152,9 @@ struct SettingsSheet: View {
                     }
                 }
 
-                WeekCard(tint: IrisStyle.named(irisID))
+                section("Eyes") { EyeDesigner(look: look, brain: preview) }
 
-                section("Eyes") {
-                    EyesCanvas(brain: preview, iris: IrisStyle.named(irisID))
-                        .frame(height: 200)
-                        .allowsHitTesting(false)
-                    HStack(spacing: 0) {
-                        ForEach(IrisStyle.all) { style in
-                            Button {
-                                Haptics.tap(); irisID = style.id
-                            } label: {
-                                VStack(spacing: 7) {
-                                    Circle()
-                                        .fill(RadialGradient(colors: [style.light, style.dark], center: .center, startRadius: 2, endRadius: 20))
-                                        .frame(width: 36, height: 36)
-                                        .overlay(Circle().strokeBorder(.white, lineWidth: irisID == style.id ? 2.5 : 0).padding(-4))
-                                    Text(style.name).font(.system(size: 11, weight: .medium))
-                                        .foregroundStyle(.white.opacity(irisID == style.id ? 0.9 : 0.4))
-                                }
-                                .frame(maxWidth: .infinity)
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                    .padding(.vertical, 14)
-                }
+                WeekCard(tint: IrisStyle.named(irisID))
 
                 section("While you work") {
                     toggle("Follow my face", "Uses the front camera to track where you are. Nothing is recorded or leaves the phone.",

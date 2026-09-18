@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct RootView: View {
-    @AppStorage("iris") private var irisID = "amber"
+    @State private var look = Look.shared
     @AppStorage("camera") private var cameraOn = false
     @AppStorage("motion") private var motionOn = true
     @AppStorage("haptics") private var hapticsOn = true
@@ -21,7 +21,7 @@ struct RootView: View {
 
     @Environment(\.scenePhase) private var phase
 
-    private var iris: IrisStyle { IrisStyle.named(irisID) }
+    private var iris: IrisStyle { look.iris }
     private var args: [String] { ProcessInfo.processInfo.arguments }
 
     var body: some View {
@@ -29,7 +29,7 @@ struct RootView: View {
             ZStack {
                 Color.black.ignoresSafeArea()
 
-                EyesCanvas(brain: brain, iris: iris, dimmed: working && !controlsVisible)
+                EyesCanvas(brain: brain, look: look, dimmed: working && !controlsVisible)
                     .ignoresSafeArea()
                     .contentShape(Rectangle())
                     .onTapGesture { p in
@@ -63,7 +63,7 @@ struct RootView: View {
             }
         }
         .sheet(isPresented: $showSettings) {
-            SettingsSheet(irisID: $irisID, cameraOn: $cameraOn, motionOn: $motionOn,
+            SettingsSheet(cameraOn: $cameraOn, motionOn: $motionOn,
                           hapticsOn: $hapticsOn, chimeMinutes: $chimeMinutes)
                 .presentationDetents([.large])
                 .presentationBackground(.black)
@@ -167,6 +167,9 @@ struct RootView: View {
         // Store screenshots: -shot idle|work|settings, -expr <expression>
         if let i = args.firstIndex(of: "-shot"), i + 1 < args.count {
             Ledger.seed()
+            if let j = args.firstIndex(of: "-preset"), j + 1 < args.count {
+                Look.presets.first { $0.id == args[j + 1].replacingOccurrences(of: "_", with: " ") }?.apply(look)
+            }
             let mode = args[i + 1]
             if mode == "work" {
                 working = true
