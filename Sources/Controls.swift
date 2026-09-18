@@ -51,7 +51,7 @@ struct FocusSlider: View {
                 .frame(maxWidth: .infinity)
                 .padding(.leading, on ? 0 : knob)
                 .padding(.trailing, on ? knob : 0)
-                .opacity(on ? 1 - (1 - progress) * 2.2 : 1 - progress * 2.2)
+                .opacity(labelOpacity(progress))
 
                 // Knob
                 ZStack {
@@ -91,6 +91,11 @@ struct FocusSlider: View {
         .onAppear {
             withAnimation(.linear(duration: 2.6).repeatForever(autoreverses: false)) { shimmer = 1 }
         }
+    }
+
+    private func labelOpacity(_ progress: CGFloat) -> Double {
+        let p = Double(progress)
+        return on ? 1.0 - (1.0 - p) * 2.2 : 1.0 - p * 2.2
     }
 
     private func label(_ s: String) -> some View {

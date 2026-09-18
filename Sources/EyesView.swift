@@ -63,66 +63,8 @@ struct EyesCanvas: View {
 
         ctx.drawLayer { g in
             g.clip(to: eyeShape)
-
-            // Sclera
-            g.fill(eyeShape, with: .radialGradient(
-                Gradient(colors: [Color(white: 1), Color(white: 0.93), Color(red: 0.78, green: 0.80, blue: 0.86)]),
-                center: CGPoint(x: rect.midX - ew * 0.12, y: rect.midY - eh * 0.16),
-                startRadius: 0, endRadius: eh * 0.72))
-
-            // Iris + pupil, pushed by gaze.
-            let ir = ew * 0.30
-            let ic = CGPoint(x: c.x + f.gaze.x * ew * 0.22 + inner * ew * 0.015,
-                             y: c.y + f.gaze.y * eh * 0.2 + eh * 0.04)
-            let irisRect = CGRect(x: ic.x - ir, y: ic.y - ir, width: ir * 2, height: ir * 2)
-            g.fill(Path(ellipseIn: irisRect), with: .radialGradient(
-                Gradient(colors: [iris.light, iris.light.opacity(0.95), iris.dark]),
-                center: ic, startRadius: ir * 0.2, endRadius: ir))
-            // Fibres
-            for k in 0..<22 {
-                let a = Double(k) / 22 * .pi * 2
-                var p = Path()
-                p.move(to: CGPoint(x: ic.x + cos(a) * ir * 0.5, y: ic.y + sin(a) * ir * 0.5))
-                p.addLine(to: CGPoint(x: ic.x + cos(a) * ir * 0.93, y: ic.y + sin(a) * ir * 0.93))
-                g.stroke(p, with: .color(iris.dark.opacity(0.28)), lineWidth: 1.2 * s)
-            }
-            g.stroke(Path(ellipseIn: irisRect.insetBy(dx: 1 * s, dy: 1 * s)), with: .color(iris.dark.opacity(0.9)), lineWidth: 3 * s)
-
-            let pr = ir * 0.46 * f.face.pupil
-            g.fill(Path(ellipseIn: CGRect(x: ic.x - pr, y: ic.y - pr, width: pr * 2, height: pr * 2)), with: .color(Color(white: 0.02)))
-
-            // Catchlights
-            let hl = ir * 0.26
-            g.fill(Path(ellipseIn: CGRect(x: ic.x - ir * 0.52, y: ic.y - ir * 0.58, width: hl * 2, height: hl * 2)),
-                   with: .color(.white.opacity(0.95)))
-            g.fill(Path(ellipseIn: CGRect(x: ic.x + ir * 0.28, y: ic.y + ir * 0.22, width: hl * 0.7, height: hl * 0.7)),
-                   with: .color(.white.opacity(0.7)))
-
-            // Top shading, the lid's shadow on the eyeball.
-            g.fill(eyeShape, with: .linearGradient(
-                Gradient(colors: [.black.opacity(0.28), .clear]),
-                startPoint: CGPoint(x: c.x, y: rect.minY), endPoint: CGPoint(x: c.x, y: rect.minY + eh * 0.32)))
-
-            // Upper lid: a tilted, slightly curved sheet of night falling from above.
-            let tilt = e.lidTilt
-            let lidCenterY = rect.minY - 3 * s + (1 - open) * (eh + 6 * s) + abs(tilt) * ew * 0.22
-            func lidY(_ x: CGFloat) -> CGFloat { lidCenterY + tilt * inner * (x - c.x) }
-            let x0 = rect.minX - 10 * s, x1 = rect.maxX + 10 * s
-            var lid = Path()
-            lid.move(to: CGPoint(x: x0, y: rect.minY - 200))
-            lid.addLine(to: CGPoint(x: x1, y: rect.minY - 200))
-            lid.addLine(to: CGPoint(x: x1, y: lidY(x1)))
-            lid.addQuadCurve(to: CGPoint(x: x0, y: lidY(x0)),
-                             control: CGPoint(x: c.x, y: lidY(c.x) + eh * 0.1 * open))
-            lid.closeSubpath()
-            g.fill(lid, with: .color(.black))
-
-            // Lower lid: rises as a broad arc, which turns the eye into a smile.
-            if e.lower > 0.01 {
-                let top = rect.maxY - e.lower * eh * 1.05
-                let lower = Path(ellipseIn: CGRect(x: rect.minX - ew * 0.3, y: top, width: ew * 1.6, height: eh * 1.4))
-                g.fill(lower, with: .color(.black))
-            }
+            drawBall(rect: rect, c: c, ew: ew, eh: eh, inner: inner, s: s, f: f, iris: iris, g: &g)
+            drawLids(e, rect: rect, c: c, ew: ew, eh: eh, open: open, inner: inner, s: s, g: &g)
         }
 
         // A thin rim where the lid meets the eye, reads as an eyelash line when nearly closed.
@@ -147,6 +89,63 @@ struct EyesCanvas: View {
         ctx.drawLayer { g in
             g.addFilter(.shadow(color: iris.light.opacity(0.35), radius: 10 * s))
             g.stroke(brow, with: .color(Color(white: 0.94)), style: StrokeStyle(lineWidth: 15 * s, lineCap: .round))
+        }
+    }
+
+    private static func drawBall(rect: CGRect, c: CGPoint, ew: CGFloat, eh: CGFloat, inner: CGFloat, s: CGFloat,
+                                 f: Brain.Frame, iris: IrisStyle, g: inout GraphicsContext) {
+        let eyeShape = Path(ellipseIn: rect)
+        let scleraCenter = CGPoint(x: rect.midX - ew * 0.12, y: rect.midY - eh * 0.16)
+        let sclera = Gradient(colors: [Color(white: 1), Color(white: 0.93), Color(red: 0.78, green: 0.80, blue: 0.86)])
+        g.fill(eyeShape, with: .radialGradient(sclera, center: scleraCenter, startRadius: 0, endRadius: eh * 0.72))
+
+        let ir: CGFloat = ew * 0.30
+        let ix: CGFloat = c.x + f.gaze.x * ew * 0.22 + inner * ew * 0.015
+        let iy: CGFloat = c.y + f.gaze.y * eh * 0.2 + eh * 0.04
+        let ic = CGPoint(x: ix, y: iy)
+        let irisRect = CGRect(x: ix - ir, y: iy - ir, width: ir * 2, height: ir * 2)
+        let irisGrad = Gradient(colors: [iris.light, iris.light.opacity(0.95), iris.dark])
+        g.fill(Path(ellipseIn: irisRect), with: .radialGradient(irisGrad, center: ic, startRadius: ir * 0.2, endRadius: ir))
+
+        var fibres = Path()
+        for k in 0..<22 {
+            let a = CGFloat(k) / 22 * .pi * 2
+            let cx: CGFloat = cos(a), sy: CGFloat = sin(a)
+            fibres.move(to: CGPoint(x: ix + cx * ir * 0.5, y: iy + sy * ir * 0.5))
+            fibres.addLine(to: CGPoint(x: ix + cx * ir * 0.93, y: iy + sy * ir * 0.93))
+        }
+        g.stroke(fibres, with: .color(iris.dark.opacity(0.28)), lineWidth: 1.2 * s)
+        g.stroke(Path(ellipseIn: irisRect.insetBy(dx: s, dy: s)), with: .color(iris.dark.opacity(0.9)), lineWidth: 3 * s)
+
+        let pr: CGFloat = ir * 0.46 * f.face.pupil
+        g.fill(Path(ellipseIn: CGRect(x: ix - pr, y: iy - pr, width: pr * 2, height: pr * 2)), with: .color(Color(white: 0.02)))
+
+        let hl: CGFloat = ir * 0.26
+        g.fill(Path(ellipseIn: CGRect(x: ix - ir * 0.52, y: iy - ir * 0.58, width: hl * 2, height: hl * 2)), with: .color(.white.opacity(0.95)))
+        g.fill(Path(ellipseIn: CGRect(x: ix + ir * 0.28, y: iy + ir * 0.22, width: hl * 0.7, height: hl * 0.7)), with: .color(.white.opacity(0.7)))
+
+        let shade = Gradient(colors: [.black.opacity(0.28), .clear])
+        g.fill(eyeShape, with: .linearGradient(shade, startPoint: CGPoint(x: c.x, y: rect.minY),
+                                               endPoint: CGPoint(x: c.x, y: rect.minY + eh * 0.32)))
+    }
+
+    private static func drawLids(_ e: EyeShape, rect: CGRect, c: CGPoint, ew: CGFloat, eh: CGFloat, open: CGFloat,
+                                 inner: CGFloat, s: CGFloat, g: inout GraphicsContext) {
+        let tilt: CGFloat = e.lidTilt
+        let lidCenterY: CGFloat = rect.minY - 3 * s + (1 - open) * (eh + 6 * s) + abs(tilt) * ew * 0.22
+        func lidY(_ x: CGFloat) -> CGFloat { lidCenterY + tilt * inner * (x - c.x) }
+        let x0: CGFloat = rect.minX - 10 * s, x1: CGFloat = rect.maxX + 10 * s
+        var lid = Path()
+        lid.move(to: CGPoint(x: x0, y: rect.minY - 200))
+        lid.addLine(to: CGPoint(x: x1, y: rect.minY - 200))
+        lid.addLine(to: CGPoint(x: x1, y: lidY(x1)))
+        lid.addQuadCurve(to: CGPoint(x: x0, y: lidY(x0)), control: CGPoint(x: c.x, y: lidY(c.x) + eh * 0.1 * open))
+        lid.closeSubpath()
+        g.fill(lid, with: .color(.black))
+
+        if e.lower > 0.01 {
+            let top: CGFloat = rect.maxY - e.lower * eh * 1.05
+            g.fill(Path(ellipseIn: CGRect(x: rect.minX - ew * 0.3, y: top, width: ew * 1.6, height: eh * 1.4)), with: .color(.black))
         }
     }
 }
