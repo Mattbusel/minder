@@ -1,0 +1,4 @@
+*.xcodeproj
+dd/
+shots/
+.DS_Store

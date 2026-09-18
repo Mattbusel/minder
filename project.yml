@@ -1,0 +1,58 @@
+## Minder, XcodeGen project spec. The .xcodeproj is generated in CI, never committed.
+name: Minder
+options:
+  bundleIdPrefix: com.mattbusel
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "5.0"
+    CODE_SIGN_STYLE: Manual
+    DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
+    IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+targets:
+  Minder:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources
+      - path: Resources/PrivacyInfo.xcprivacy
+        buildPhase: resources
+      - path: Resources/Assets.xcassets
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mattbusel.minder
+        PRODUCT_NAME: Minder
+        INFOPLIST_KEY_CFBundleDisplayName: Minder
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        TARGETED_DEVICE_FAMILY: "1"
+        SUPPORTS_MACCATALYST: NO
+        INFOPLIST_KEY_NSCameraUsageDescription: "The eyes use the front camera to follow your face while you work. Nothing is recorded, saved or sent anywhere; frames are read on the device and dropped."
+    info:
+      path: Resources/Info.plist
+      properties:
+        CFBundleDisplayName: Minder
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        UILaunchScreen:
+          UIColorName: LaunchBackground
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UIUserInterfaceStyle: Dark
+        UIStatusBarStyle: UIStatusBarStyleLightContent
+        ITSAppUsesNonExemptEncryption: false
+        NSCameraUsageDescription: "The eyes use the front camera to follow your face while you work. Nothing is recorded, saved or sent anywhere; frames are read on the device and dropped."
+schemes:
+  Minder:
+    build:
+      targets:
+        Minder: all
+    run:
+      config: Debug
+    archive:
+      config: Release
