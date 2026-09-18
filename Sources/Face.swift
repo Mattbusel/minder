@@ -47,8 +47,8 @@ enum Expression: String, CaseIterable {
         case .neutral:   return .both(EyeShape())
         case .attentive: return .both(EyeShape(browY: 6, browCurve: 0.22), pupil: 1.05)
         case .focused:   return .both(EyeShape(open: 0.84, lidTilt: 0.06, browY: -3, browTilt: 0.1, browCurve: 0.12))
-        case .happy:     return .both(EyeShape(open: 1, lower: 0.34, browY: 9, browTilt: -0.08, browCurve: 0.32), pupil: 1.1)
-        case .proud:     return .both(EyeShape(open: 0.8, lower: 0.4, browY: 5, browTilt: -0.14, browCurve: 0.28), pupil: 1.1)
+        case .happy:     return .both(EyeShape(open: 1, lower: 0.26, browY: 9, browTilt: -0.08, browCurve: 0.32), pupil: 1.1)
+        case .proud:     return .both(EyeShape(open: 0.8, lower: 0.32, browY: 5, browTilt: -0.14, browCurve: 0.28), pupil: 1.1)
         case .suspicious:
             return Face(left: EyeShape(open: 0.42, lidTilt: 0.12, browY: -7, browTilt: 0.26, browCurve: 0.06),
                         right: EyeShape(open: 0.78, browY: 12, browTilt: -0.18, browCurve: 0.3), pupil: 0.85)

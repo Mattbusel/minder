@@ -86,7 +86,8 @@ struct EyeRenderer {
         }
 
         drawRim(shape: shape, lid: lid, rect: rect, open: open, ctx: &ctx)
-        if look.lashes && open > 0.04 { drawLashes(lid: lid, shape: shape, rect: rect, ctx: &ctx) }
+        if look.lashes && open > 0.04 { drawLashes(lid: lid, shape: shape, rect: rect, isLeft: isLeft, ctx: &ctx) }
+        if e.lower > 0.02 && open > 0.04 { drawLowerRim(e, shape: shape, rect: rect, ew: ew, eh: eh, ctx: &ctx) }
         if open < 0.08 { drawClosedLine(c: c, rect: rect, ew: ew, eh: eh, ctx: &ctx) }
         if look.brow != .none { drawBrow(e, c: c, rect: rect, ew: ew, eh: eh, inner: inner, iris: iris, ctx: &ctx) }
     }
@@ -296,6 +297,24 @@ struct EyeRenderer {
         }
     }
 
+    /// The happy squint: a bright cheek line along the lower lid, so it reads as a smile and not a shadow.
+    private func drawLowerRim(_ e: EyeShape, shape: Path, rect: CGRect, ew: CGFloat, eh: CGFloat, ctx: inout GraphicsContext) {
+        let top: CGFloat = rect.maxY - e.lower * eh * 1.05
+        let ell = CGRect(x: rect.minX - ew * 0.7, y: top, width: ew * 2.4, height: eh * 1.2)
+        var edge = Path()
+        var started = false
+        for i in 0...28 {
+            let x: CGFloat = rect.minX + rect.width * CGFloat(i) / 28
+            let u: CGFloat = (x - ell.midX) / (ell.width / 2)
+            let y: CGFloat = ell.midY - ell.height / 2 * sqrt(max(0, 1 - u * u))
+            let pt = CGPoint(x: x, y: y)
+            if shape.contains(pt) {
+                if started { edge.addLine(to: pt) } else { edge.move(to: pt); started = true }
+            }
+        }
+        ctx.stroke(edge, with: .color(.white.opacity(0.9)), style: StrokeStyle(lineWidth: 3.6 * s, lineCap: .round, lineJoin: .round))
+    }
+
     /// A bright line along the lid edge, so the lid reads as a lid and not a hole.
     private func drawRim(shape: Path, lid: LidGeometry, rect: CGRect, open: CGFloat, ctx: inout GraphicsContext) {
         if look.sclera == .void { ctx.stroke(shape, with: .color(.white.opacity(0.08)), lineWidth: 1.2 * s) }
@@ -313,23 +332,29 @@ struct EyeRenderer {
         ctx.stroke(edge, with: .color(.white.opacity(0.9)), style: StrokeStyle(lineWidth: 3.2 * s, lineCap: .round, lineJoin: .round))
     }
 
-    private func drawLashes(lid: LidGeometry, shape: Path, rect: CGRect, ctx: inout GraphicsContext) {
-        var lashes = Path()
-        let n = 9
-        for i in 0..<n {
-            let t: CGFloat = 0.14 + 0.72 * CGFloat(i) / CGFloat(n - 1)
-            let x: CGFloat = rect.minX + rect.width * t
-            let y: CGFloat = lid.curveY(x)
-            guard shape.contains(CGPoint(x: x, y: y + 1)) else { continue }
-            let side: CGFloat = (t - 0.5) * 2
-            let len: CGFloat = rect.width * (0.11 + 0.05 * (1 - abs(side)))
-            let a: CGFloat = -.pi / 2 + side * 0.9
-            let tip = CGPoint(x: x + cos(a) * len, y: y + sin(a) * len)
-            let ctrl = CGPoint(x: x + cos(a) * len * 0.5 + side * len * 0.35, y: y + sin(a) * len * 0.5)
-            lashes.move(to: CGPoint(x: x, y: y))
-            lashes.addQuadCurve(to: tip, control: ctrl)
+    /// Three tapered lashes flicking off the outer corner, riding the lid edge (or the eye's top when wide open).
+    private func drawLashes(lid: LidGeometry, shape: Path, rect: CGRect, isLeft: Bool, ctx: inout GraphicsContext) {
+        let outer: CGFloat = isLeft ? -1 : 1
+        let spots: [CGFloat] = [0.5, 0.7, 0.88]
+        for (i, t) in spots.enumerated() {
+            let x: CGFloat = rect.midX + outer * rect.width / 2 * t
+            let u: CGFloat = (x - rect.midX) / (rect.width / 2)
+            let top: CGFloat = rect.midY - rect.height / 2 * sqrt(max(0, 1 - u * u))
+            let y: CGFloat = max(lid.curveY(x), top)
+            guard y < rect.maxY - rect.height * 0.15 else { continue }
+            let len: CGFloat = rect.width * (0.13 + 0.03 * CGFloat(i))
+            let a: CGFloat = -.pi / 2 + outer * (0.45 + 0.32 * CGFloat(i))
+            let tip = CGPoint(x: x + cos(a) * len + outer * len * 0.2, y: y + sin(a) * len)
+            let ctrl = CGPoint(x: x + cos(a) * len * 0.35, y: y + sin(a) * len * 0.75)
+            let thick: CGFloat = 4.2 * s
+            // A filled sliver: wide at the root, a point at the tip.
+            var lash = Path()
+            lash.move(to: CGPoint(x: x - thick, y: y + 1))
+            lash.addQuadCurve(to: tip, control: CGPoint(x: ctrl.x - thick * 0.6, y: ctrl.y))
+            lash.addQuadCurve(to: CGPoint(x: x + thick, y: y + 1), control: CGPoint(x: ctrl.x + thick * 0.6, y: ctrl.y + thick))
+            lash.closeSubpath()
+            ctx.fill(lash, with: .color(.white.opacity(0.92)))
         }
-        ctx.stroke(lashes, with: .color(.white.opacity(0.88)), style: StrokeStyle(lineWidth: 2.6 * s, lineCap: .round))
     }
 
     private func drawClosedLine(c: CGPoint, rect: CGRect, ew: CGFloat, eh: CGFloat, ctx: inout GraphicsContext) {
@@ -383,17 +408,18 @@ struct EyeRenderer {
     /// Individual brow hairs laid along the curve, fuller toward the inner end.
     private func hairs(_ a: CGPoint, _ b: CGPoint, _ c: CGPoint) -> Path {
         var hairs = Path()
-        for i in 0..<34 {
-            let t: CGFloat = CGFloat(i) / 33
+        for i in 0..<26 {
+            let t: CGFloat = CGFloat(i) / 25
             let p = quad(a, b, c, t)
             let d = quadTangent(a, b, c, t)
             let len: CGFloat = max(0.001, sqrt(d.x * d.x + d.y * d.y))
             let tx: CGFloat = d.x / len, ty: CGFloat = d.y / len
             let jitter: CGFloat = sin(CGFloat(i) * 9.17) * 5 * s
             let thick: CGFloat = (6 + 10 * t) * s
-            let hairLen: CGFloat = 12 * s + t * 6 * s
+            let hairLen: CGFloat = (9 + 7 * abs(sin(CGFloat(i) * 4.1)) + t * 6) * s
             let start = CGPoint(x: p.x - ty * thick * 0.5 + tx * jitter * 0.3, y: p.y + tx * thick * 0.5 + jitter * 0.2)
-            let dx: CGFloat = tx * -0.55 - ty, dy: CGFloat = ty * -0.55 + tx
+            let lean: CGFloat = -0.3 - 0.5 * abs(sin(CGFloat(i) * 2.3))
+            let dx: CGFloat = tx * lean - ty, dy: CGFloat = ty * lean + tx
             let norm: CGFloat = max(0.001, sqrt(dx * dx + dy * dy))
             hairs.move(to: start)
             hairs.addLine(to: CGPoint(x: start.x - dx / norm * hairLen, y: start.y - dy / norm * hairLen))
