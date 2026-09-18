@@ -47,7 +47,7 @@ final class Brain {
 
     func engage(at t: Double) {
         mode = .work
-        workStart = t; lastChime = t
+        workStart = t; lastChime = t; faceSeenAt = t; searching = false
         react(.surprised, for: 0.45, at: t)
         base = .attentive
         schedule(.happy, after: 0.5, for: 1.4, at: t)
