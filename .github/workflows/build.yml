@@ -25,10 +25,16 @@ jobs:
           echo "UDID=$udid" >> "$GITHUB_ENV"
           xcodebuild build -project Minder.xcodeproj -scheme Minder -configuration Debug             -destination "id=$udid" -derivedDataPath dd CODE_SIGNING_ALLOWED=NO | xcpretty
       - name: Screenshots
+        timeout-minutes: 15
         run: |
           udid=$UDID
+          xcrun simctl shutdown all || true
           xcrun simctl boot "$udid" || true
-          xcrun simctl bootstatus "$udid" -b
+          for i in $(seq 1 60); do
+            xcrun simctl spawn "$udid" launchctl print system >/dev/null 2>&1 && break
+            sleep 5
+          done
+          sleep 20
           xcrun simctl status_bar "$udid" override --time "9:41" --batteryState charged --batteryLevel 100 || true
           xcrun simctl ui "$udid" appearance dark || true
           app=$(find dd/Build/Products -name "Minder.app" -path "*iphonesimulator*" | head -1)
