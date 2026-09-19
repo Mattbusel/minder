@@ -183,6 +183,41 @@ struct RootView: View {
             }
             if mode == "work" && brain.pinned == nil { brain.pinned = .focused }
         }
+
+        if args.contains("-demoAutoplay") { Task { await autoplay() } }
+    }
+
+    /// App Review recording: a typical first use, through the same functions the controls call.
+    @MainActor private func autoplay() async {
+        func wait(_ s: Double) async { try? await Task.sleep(for: .seconds(s)) }
+        await wait(3)
+        for p in [CGPoint(x: -0.6, y: -0.2), CGPoint(x: 0.7, y: 0.3), CGPoint(x: 0, y: 0)] {
+            brain.touched(at: p, t: now)
+            await wait(1.4)
+        }
+
+        showSettings = true
+        await wait(2.5)
+        for id in ["Cat", "Robot", "Classic"] {
+            withAnimation { Look.presets.first { $0.id == id }?.apply(look) }
+            await wait(1.8)
+        }
+        showSettings = false
+        await wait(2)
+
+        withAnimation(.spring(duration: 0.6)) { working = true }
+        startWork()
+        await wait(12)
+        brain.phoneMoved(at: now)
+        await wait(4)
+        reveal()
+        await wait(2.5)
+        withAnimation(.spring(duration: 0.6)) { working = false }
+        stopWork()
+        await wait(4.5)
+
+        let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        try? Data().write(to: docs.appendingPathComponent("demo_done"))
     }
 
     private func startWork() {
