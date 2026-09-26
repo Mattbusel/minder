@@ -55,7 +55,7 @@ def token() -> str:
     now = int(time.time())
     payload = {
         "iss": ISSUER_ID,
-        "iat": now,
+        "iat": now - 60,
         "exp": now + 20 * 60,
         "aud": "appstoreconnect-v1",
     }
@@ -70,9 +70,15 @@ def call(method: str, path: str, body=None, params=None, quiet=False):
         "Authorization": f"Bearer {token()}",
         "Content-Type": "application/json",
     }
-    response = requests.request(
-        method, url, headers=headers, json=body, params=params, timeout=60
-    )
+    for attempt in range(3):
+        response = requests.request(
+            method, url, headers=headers, json=body, params=params, timeout=60
+        )
+        # Apple hands out the odd 401 for a valid token; a fresh one goes through.
+        if response.status_code != 401:
+            break
+        time.sleep(2)
+        headers["Authorization"] = f"Bearer {token()}"
     if response.status_code >= 400:
         if not quiet:
             print(f"  ! {method} {path} -> {response.status_code}")
@@ -181,8 +187,17 @@ def create_app():
     return None
 
 
-def ensure_version(app_id: str, version="1.0"):
-    """Find or create the 1.0 version, which the listing text hangs off."""
+def marketing_version() -> str:
+    """The MARKETING_VERSION in project.yml: the version being worked on."""
+    import re
+    yml = (Path(__file__).resolve().parent.parent / "project.yml").read_text(encoding="utf-8")
+    m = re.search(r'MARKETING_VERSION:\s*"?([0-9.]+)', yml)
+    return m.group(1) if m else "1.0"
+
+
+def ensure_version(app_id: str, version=None):
+    """Find or create the version being worked on, which the listing text hangs off."""
+    version = version or marketing_version()
     versions = call(
         "GET",
         f"/v1/apps/{app_id}/appStoreVersions",

@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct RootView: View {
+    @Environment(Pro.self) private var pro
     @State private var look = Look.shared
     @AppStorage("camera") private var cameraOn = false
     @AppStorage("motion") private var motionOn = true
@@ -71,10 +72,11 @@ struct RootView: View {
         }
         .onAppear(perform: boot)
         .onChange(of: cameraOn) { _, on in applyCamera(on) }
+        .onChange(of: pro.unlocked) { _, _ in applyCamera(cameraOn) }
         .onChange(of: hapticsOn) { _, on in Haptics.enabled = on }
         .onChange(of: chimeMinutes) { _, m in brain.chimeInterval = Double(m) * 60 }
         .onChange(of: phase) { _, p in
-            if p == .active { if working { tracker.start(); motion.start() } }
+            if p == .active { if working { applyCamera(cameraOn); motion.start() } }
             else { tracker.stop(); motion.stop() }
         }
         .task {
@@ -178,6 +180,7 @@ struct RootView: View {
                 brain.engage(at: now)
             }
             if mode == "settings" { showSettings = true }
+            if mode == "paywall" { showSettings = true; pro.paywall = .designer }
             if let j = args.firstIndex(of: "-expr"), j + 1 < args.count {
                 brain.pinned = Expression(rawValue: args[j + 1])
             }
@@ -244,8 +247,10 @@ struct RootView: View {
     }
 
     private func applyCamera(_ on: Bool) {
-        brain.cameraOn = on && FaceTracker.authorized
-        if on && working { tracker.start() } else { tracker.stop() }
+        // Follow my face is Pro. The setting is remembered either way; it only runs with Pro.
+        let live = on && pro.unlocked
+        brain.cameraOn = live && FaceTracker.authorized
+        if live && working { tracker.start() } else { tracker.stop() }
     }
 
     private func reveal() {

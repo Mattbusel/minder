@@ -128,6 +128,7 @@ private struct KnobEyes: View {
 }
 
 struct SettingsSheet: View {
+    @Environment(Pro.self) private var pro
     @State private var look = Look.shared
     private var irisID: String { look.irisID }
     @Binding var cameraOn: Bool
@@ -139,6 +140,7 @@ struct SettingsSheet: View {
     @State private var preview = Brain()
 
     var body: some View {
+        @Bindable var pro = pro
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
                 HStack {
@@ -154,11 +156,14 @@ struct SettingsSheet: View {
 
                 section("Eyes") { EyeDesigner(look: look, brain: preview) }
 
+                ProCard(tint: IrisStyle.named(irisID))
+
                 WeekCard(tint: IrisStyle.named(irisID))
 
                 section("While you work") {
-                    toggle("Follow my face", "Uses the front camera to track where you are. Nothing is recorded or leaves the phone.",
-                           icon: "face.dashed", isOn: Binding(get: { cameraOn }, set: { want in
+                    toggle(pro.unlocked ? "Follow my face" : "Follow my face (Pro)", "Uses the front camera to track where you are. Nothing is recorded or leaves the phone.",
+                           icon: "face.dashed", isOn: Binding(get: { cameraOn && pro.unlocked }, set: { want in
+                               if want && !pro.unlocked { pro.ask(.face); return }
                                if want && !FaceTracker.authorized {
                                    FaceTracker.requestAccess { ok in cameraOn = ok; cameraDenied = !ok }
                                } else { cameraOn = want }
@@ -197,6 +202,11 @@ struct SettingsSheet: View {
         }
         .foregroundStyle(.white)
         .tint(IrisStyle.named(irisID).light)
+        .sheet(item: $pro.paywall) { r in
+            PaywallView(reason: r)
+                .presentationBackground(.black)
+                .presentationCornerRadius(34)
+        }
     }
 
     private var divider: some View { Rectangle().fill(.white.opacity(0.07)).frame(height: 1).padding(.leading, 60) }

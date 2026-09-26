@@ -2,6 +2,7 @@ import SwiftUI
 
 /// The "make them yours" panel: live preview, presets, and every knob.
 struct EyeDesigner: View {
+    @Environment(Pro.self) private var pro
     @Bindable var look: Look
     let brain: Brain
 
@@ -12,10 +13,11 @@ struct EyeDesigner: View {
                     .frame(height: 250)
                     .allowsHitTesting(false)
                 Button {
+                    guard pro.unlocked else { pro.ask(.designer); return }
                     Haptics.tap(.medium)
                     withAnimation(.spring(duration: 0.4)) { look.randomize() }
                 } label: {
-                    Image(systemName: "dice.fill").font(.system(size: 16, weight: .semibold))
+                    Image(systemName: pro.unlocked ? "dice.fill" : "lock.fill").font(.system(size: 16, weight: .semibold))
                         .foregroundStyle(.black)
                         .frame(width: 40, height: 40)
                         .background(look.iris.light, in: Circle())
@@ -27,8 +29,15 @@ struct EyeDesigner: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     ForEach(Look.presets) { p in
-                        Button { Haptics.tap(); withAnimation(.spring(duration: 0.4)) { p.apply(look) } } label: {
-                            Text(p.id).font(.system(size: 13, weight: .semibold, design: .rounded))
+                        let open = pro.unlocked || Pro.freePresets.contains(p.id)
+                        Button {
+                            guard open else { pro.ask(.designer); return }
+                            Haptics.tap(); withAnimation(.spring(duration: 0.4)) { p.apply(look) }
+                        } label: {
+                            HStack(spacing: 5) {
+                                if !open { Image(systemName: "lock.fill").font(.system(size: 9, weight: .bold)).foregroundStyle(.white.opacity(0.5)) }
+                                Text(p.id).font(.system(size: 13, weight: .semibold, design: .rounded))
+                            }
                                 .foregroundStyle(.white.opacity(0.85))
                                 .padding(.horizontal, 14).frame(height: 34)
                                 .background(.white.opacity(0.08), in: Capsule())
@@ -41,6 +50,33 @@ struct EyeDesigner: View {
             }
             .padding(.bottom, 16)
 
+            knobs
+                .blur(radius: pro.unlocked ? 0 : 5)
+                .allowsHitTesting(pro.unlocked)
+                .overlay { if !pro.unlocked { lockedKnobs } }
+        }
+        .tint(look.iris.light)
+    }
+
+    /// For a free user: the real knobs, frosted, with a way in.
+    private var lockedKnobs: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "paintpalette.fill").font(.system(size: 20, weight: .medium)).foregroundStyle(look.iris.light)
+                .frame(width: 48, height: 48).background(look.iris.light.opacity(0.14), in: Circle())
+            Text("Design your own eyes").font(.system(size: 18, weight: .semibold, design: .rounded))
+            Text("Colours, odd eyes, shapes, pupils, brows, glow.").font(.system(size: 13)).foregroundStyle(.white.opacity(0.5))
+            Button { pro.ask(.designer) } label: {
+                Text("See Minder Pro, \(pro.price) once").font(.system(size: 15, weight: .semibold, design: .rounded)).foregroundStyle(.black)
+                    .padding(.horizontal, 20).frame(height: 42).background(look.iris.light, in: Capsule())
+            }.buttonStyle(.plain)
+        }
+        .padding(22)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.black.opacity(0.45))
+    }
+
+    @ViewBuilder private var knobs: some View {
+        VStack(alignment: .leading, spacing: 0) {
             divider
             label("Iris")
             swatches(selection: $look.irisID)
@@ -69,7 +105,6 @@ struct EyeDesigner: View {
             }
             .padding(.horizontal, 16).padding(.vertical, 12)
         }
-        .tint(look.iris.light)
     }
 
     private var divider: some View { Rectangle().fill(.white.opacity(0.07)).frame(height: 1).padding(.vertical, 6) }

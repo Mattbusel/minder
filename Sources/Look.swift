@@ -24,7 +24,10 @@ final class Look {
     var spacing: Double { didSet { save("spacing", spacing) } }
 
     private let d = UserDefaults.standard
-    private init() {
+    /// False for the paywall's parade of looks, which must never overwrite the user's own.
+    private let persist: Bool
+    private init(persist: Bool = true) {
+        self.persist = persist
         irisID = d.string(forKey: "iris") ?? "amber"
         secondIrisID = d.string(forKey: "iris2") ?? "ice"
         oddEyes = d.bool(forKey: "oddEyes")
@@ -37,7 +40,9 @@ final class Look {
         glow = d.object(forKey: "glow") as? Double ?? 0.5
         spacing = d.object(forKey: "spacing") as? Double ?? 1
     }
-    private func save(_ k: String, _ v: Any) { d.set(v, forKey: k) }
+    private func save(_ k: String, _ v: Any) { if persist { d.set(v, forKey: k) } }
+    /// A throwaway Look that starts from the user's and never saves.
+    static func scratch() -> Look { Look(persist: false) }
 
     var iris: IrisStyle { IrisStyle.named(irisID) }
     var rightIris: IrisStyle { oddEyes ? IrisStyle.named(secondIrisID) : iris }

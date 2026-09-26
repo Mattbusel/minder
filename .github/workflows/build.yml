@@ -78,6 +78,12 @@ jobs:
           xcrun simctl launch "$udid" com.mattbusel.minder -shot idle -preset Night_owl -expr sleepy
           sleep 6
           xcrun simctl io "$udid" screenshot "shots/08.png"
+          # The paywall, for the in-app purchase review screenshot. Not a store screenshot.
+          mkdir -p iap
+          xcrun simctl terminate "$udid" com.mattbusel.minder || true
+          xcrun simctl launch "$udid" com.mattbusel.minder -shot paywall
+          sleep 8
+          xcrun simctl io "$udid" screenshot "iap/paywall.png"
           xcrun simctl terminate "$udid" com.mattbusel.minder || true
           xcrun simctl launch "$udid" com.mattbusel.minder -shot work -preset Grump -expr stern
           sleep 6
@@ -86,4 +92,6 @@ jobs:
         if: always()
         with:
           name: shots
-          path: shots
+          path: |
+            shots
+            iap
