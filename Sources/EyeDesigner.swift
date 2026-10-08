@@ -3,8 +3,10 @@ import SwiftUI
 /// The "make them yours" panel: live preview, presets, and every knob.
 struct EyeDesigner: View {
     @Environment(Pro.self) private var pro
+    @Environment(Extras.self) private var extras
     @Bindable var look: Look
     let brain: Brain
+    @State private var shop = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -28,6 +30,13 @@ struct EyeDesigner: View {
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
+                    ForEach(Extras.packs.filter { extras.ownsPack($0.id) }) { pk in
+                        Button { Haptics.tap(); withAnimation(.spring(duration: 0.4)) { Look.packPreset(pk.id)?.apply(look) } } label: {
+                            Text(pk.name).font(.system(size: 13, weight: .semibold, design: .rounded))
+                                .foregroundStyle(.black).padding(.horizontal, 14).frame(height: 34)
+                                .background(IrisStyle.named(pk.id).light, in: Capsule())
+                        }.buttonStyle(.plain)
+                    }
                     ForEach(Look.presets) { p in
                         let open = pro.unlocked || Pro.freePresets.contains(p.id)
                         Button {
@@ -56,6 +65,7 @@ struct EyeDesigner: View {
                 .overlay { if !pro.unlocked { lockedKnobs } }
         }
         .tint(look.iris.light)
+        .sheet(isPresented: $shop) { ShopSheet().presentationBackground(.black).presentationCornerRadius(34) }
     }
 
     /// For a free user: the real knobs, frosted, with a way in.
@@ -117,12 +127,17 @@ struct EyeDesigner: View {
     private func swatches(selection: Binding<String>) -> some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 14) {
-                ForEach(IrisStyle.all) { style in
+                ForEach(IrisStyle.all + IrisStyle.packs) { style in
                     let on = selection.wrappedValue == style.id
-                    Button { Haptics.tap(); withAnimation(.spring(duration: 0.3)) { selection.wrappedValue = style.id } } label: {
+                    let open = !IrisStyle.packs.contains(style) || extras.ownsPack(style.id)
+                    Button {
+                        Haptics.tap()
+                        if open { withAnimation(.spring(duration: 0.3)) { selection.wrappedValue = style.id } } else { shop = true }
+                    } label: {
                         VStack(spacing: 6) {
                             IrisSwatch(style: style)
                                 .frame(width: 38, height: 38)
+                                .overlay { if !open { Image(systemName: "lock.fill").font(.system(size: 11, weight: .bold)).foregroundStyle(.white).padding(5).background(.black.opacity(0.55), in: Circle()) } }
                                 .overlay(Circle().strokeBorder(.white, lineWidth: on ? 2.5 : 0).padding(-4))
                                 .scaleEffect(on ? 1.06 : 1)
                             Text(style.name).font(.system(size: 10.5, weight: .medium))

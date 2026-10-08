@@ -1,9 +1,11 @@
 import SwiftUI
 import StoreKit
 
-/// Minder Pro: one non-consumable. The eyes, slide to focus, the timer, the week, the check-in
-/// and the pick-up suspicion are free forever; Pro is the eye designer (every look and knob)
-/// and Follow my face.
+/// Minder Pro: one non-consumable. The eyes, slide to focus, the timer, the week, the goal,
+/// tags, breaks, the Live Activity, the Today widget, brown noise, the check-in and the pick-up
+/// suspicion are free forever; Pro is the eye designer (every look and knob), Follow my face,
+/// twelve weeks of history with every session and CSV, pink noise and ocean, your own tags,
+/// and the Week widget.
 ///
 /// Everyone who installed a build from before Pro existed keeps everything: they paid for it.
 /// AppTransaction's originalAppVersion is the build number they first installed. Only trusted in
@@ -17,7 +19,7 @@ final class Pro {
     /// Looks anyone can pick. The rest of the presets, the dice and every knob are Pro.
     static let freePresets: Set<String> = ["Classic", "Robot", "Cat"]
 
-    enum Reason: String, Identifiable { case designer, face, settings; var id: String { rawValue } }
+    enum Reason: String, Identifiable { case designer, face, settings, stats, sound, tags; var id: String { rawValue } }
 
     private(set) var unlocked: Bool
     private(set) var grandfathered = false
@@ -35,6 +37,7 @@ final class Pro {
         self.forced = forced != nil
         if let forced { unlocked = forced; return }
         unlocked = UserDefaults.standard.bool(forKey: key)
+        Shared.pro = unlocked
         updates = Task { [weak self] in
             for await result in Transaction.updates { await self?.apply(result) }
         }
@@ -106,11 +109,13 @@ final class Pro {
         withAnimation(.spring(response: 0.45, dampingFraction: 0.7)) { unlocked = true }
         paywall = nil
         UserDefaults.standard.set(true, forKey: key)
+        Shared.pro = true
     }
 
     private func revoke() {
         unlocked = false
         UserDefaults.standard.set(false, forKey: key)
+        Shared.pro = false
     }
 }
 
@@ -156,6 +161,12 @@ struct PaywallView: View {
                     feature("paintpalette.fill", "Design your own eyes", "Every look and every knob: iris colours, odd eyes, shapes, pupils, brows, whites, size, glow and the dice.")
                     Rectangle().fill(.white.opacity(0.07)).frame(height: 1).padding(.leading, 60)
                     feature("face.dashed", "Follow my face", "The front camera keeps the eyes on you and notices when you wander off. Nothing is recorded or leaves the phone.")
+                    Rectangle().fill(.white.opacity(0.07)).frame(height: 1).padding(.leading, 60)
+                    feature("square.grid.3x3.fill", "Twelve weeks, every session", "A heatmap against your goal, every session with its tag, all-time totals and a CSV export.")
+                    Rectangle().fill(.white.opacity(0.07)).frame(height: 1).padding(.leading, 60)
+                    feature("waveform.path", "Pink noise and ocean", "Two more focus sounds, made on the phone. Brown noise is free.")
+                    Rectangle().fill(.white.opacity(0.07)).frame(height: 1).padding(.leading, 60)
+                    feature("tag.fill", "Your own tags and the Week widget", "Tag sessions your way, and see the week on your Home Screen.")
                 }
                 .background(Color(white: 0.07), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(.white.opacity(0.06)))
@@ -190,7 +201,7 @@ struct PaywallView: View {
                 }
                 .foregroundStyle(.white.opacity(0.7))
 
-                Text("One payment, yours for good. Family Sharing works. The eyes, slide to focus, the timer, your week, the check-in and the pick-up suspicion stay free.")
+                Text("One payment, yours for good. Family Sharing works. The eyes, slide to focus, the timer, your goal and streak, tags, breaks, the Lock Screen timer, the Today widget, brown noise, the check-in and the pick-up suspicion stay free.")
                     .font(.system(size: 12)).foregroundStyle(.white.opacity(0.35)).fixedSize(horizontal: false, vertical: true)
             }
             .padding(22)
@@ -213,6 +224,9 @@ struct PaywallView: View {
     var headline: String {
         switch reason {
         case .face: return "Eyes that follow you."
+        case .stats: return "See the long game."
+        case .sound: return "More to focus to."
+        case .tags: return "Tag it your way."
         default: return "Make them yours."
         }
     }
@@ -245,7 +259,7 @@ struct ProCard: View {
                 .background(pro.unlocked ? AnyShapeStyle(tint.light) : AnyShapeStyle(tint.light.opacity(0.13)), in: Circle())
             VStack(alignment: .leading, spacing: 2) {
                 Text(pro.unlocked ? "Minder Pro" : "Minder Pro, \(pro.price) once").font(.system(size: 16, weight: .medium))
-                Text(pro.unlocked ? (pro.grandfathered ? "Unlocked. Thanks for buying Minder early." : "Unlocked. Thank you.") : "Every look, every knob, and Follow my face.")
+                Text(pro.unlocked ? (pro.grandfathered ? "Unlocked. Thanks for buying Minder early." : "Unlocked. Thank you.") : "Every look, Follow my face, twelve weeks of history, more sounds.")
                     .font(.system(size: 13)).foregroundStyle(.white.opacity(0.45))
                 if let m = pro.message, pro.paywall == nil { Text(m).font(.system(size: 12, weight: .medium)).foregroundStyle(tint.light) }
             }

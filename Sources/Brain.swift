@@ -56,6 +56,16 @@ final class Brain {
         gazeTarget = .zero; gazeHoldUntil = t + 3
     }
 
+    /// A planned session reached, or the daily goal: a proud look and a nod, mid-session.
+    func cheer(at t: Double) {
+        react(.proud, for: 2.4, at: t)
+        nodBob(-18)
+        lastInteraction = t
+    }
+
+    /// A break: the eyes doze until it ends.
+    var resting = false
+
     func disengage(at t: Double) {
         let worked = t - workStart
         mode = .idle
@@ -128,7 +138,7 @@ final class Brain {
 
         think(t)
 
-        let expr = pinned ?? flash ?? base
+        let expr = pinned ?? flash ?? (resting ? .asleep : base)
         face.step(toward: expr.face.values, dt: dt, stiffness: 190, damping: 0.62)
 
         // Gaze: face tracking beats everything but a deliberate glance.

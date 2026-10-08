@@ -135,6 +135,9 @@ struct SettingsSheet: View {
     @Binding var motionOn: Bool
     @Binding var hapticsOn: Bool
     @Binding var chimeMinutes: Int
+    @Binding var ambience: String
+    @Environment(Extras.self) private var extras
+    @State private var shop = false
     @Environment(\.dismiss) private var dismiss
     @State private var cameraDenied = false
     @State private var preview = Brain()
@@ -157,6 +160,42 @@ struct SettingsSheet: View {
                 section("Eyes") { EyeDesigner(look: look, brain: preview) }
 
                 ProCard(tint: IrisStyle.named(irisID))
+
+                Button { shop = true } label: {
+                    HStack(spacing: 14) {
+                        HStack(spacing: -8) { ForEach(IrisStyle.packs) { p in IrisSwatch(style: p).frame(width: 24, height: 24) } }
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Extras").font(.system(size: 16, weight: .medium))
+                            Text("Eye packs, sounds, Streak Shields and posters. 99¢ each.").font(.system(size: 13)).foregroundStyle(.white.opacity(0.45))
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(.white.opacity(0.4))
+                    }
+                    .padding(18)
+                    .background(Color(white: 0.07), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(.white.opacity(0.06)))
+                }.buttonStyle(.plain)
+
+                section("Sound while focusing") {
+                    ForEach(Ambience.allCases) { a in
+                        let open = a.tier == .free || (a.tier == .pro && pro.unlocked) || (a.tier == .pack && extras.ownsAmbience)
+                        Button {
+                            Haptics.tap()
+                            if open { ambience = a.rawValue; if a != .off { SoundEngine.shared.play(a); DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { SoundEngine.shared.stop() } } }
+                            else if a.tier == .pro { pro.ask(.sound) } else { shop = true }
+                        } label: {
+                            HStack(spacing: 14) {
+                                icon(a.icon)
+                                Text(a.title).font(.system(size: 16, weight: .medium))
+                                Spacer()
+                                if ambience == a.rawValue && open { Image(systemName: "checkmark").foregroundStyle(IrisStyle.named(irisID).light) }
+                                else if !open { Text(a.tier == .pro ? "PRO" : "99¢").font(.system(size: 10, weight: .bold)).tracking(1).foregroundStyle(.black).padding(.horizontal, 7).padding(.vertical, 3).background(IrisStyle.named(irisID).light, in: Capsule()) }
+                            }
+                            .padding(.horizontal, 16).padding(.vertical, 11)
+                            .contentShape(Rectangle())
+                        }.buttonStyle(.plain)
+                    }
+                }
 
                 WeekCard(tint: IrisStyle.named(irisID))
 
@@ -194,7 +233,7 @@ struct SettingsSheet: View {
                     toggle("Haptics", nil, icon: "hand.tap", isOn: $hapticsOn)
                 }
 
-                Text("Tip: prop the phone up facing you and slide to focus. Tap the eyes any time.")
+                Text("Tip: prop the phone up facing you and slide to focus. Tap the eyes any time. Say \"Start focusing in Minder\" to Siri, or add the Today widget to your Home Screen.")
                     .font(.system(size: 13)).foregroundStyle(.white.opacity(0.35))
                     .frame(maxWidth: .infinity, alignment: .center).multilineTextAlignment(.center)
             }
@@ -202,6 +241,7 @@ struct SettingsSheet: View {
         }
         .foregroundStyle(.white)
         .tint(IrisStyle.named(irisID).light)
+        .sheet(isPresented: $shop) { ShopSheet().presentationBackground(.black).presentationCornerRadius(34) }
         .sheet(item: $pro.paywall) { r in
             PaywallView(reason: r)
                 .presentationBackground(.black)

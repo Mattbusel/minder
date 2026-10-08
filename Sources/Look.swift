@@ -61,6 +61,17 @@ final class Look {
         Preset(id: "Grump") { l in l.set("ink", .almond, .round, .bushy, .classic, lashes: false, glow: 0.2) },
     ]
 
+    /// The look that comes with each 99-cent eye pack.
+    static func packPreset(_ id: String) -> Preset? {
+        switch id {
+        case "galaxy": return Preset(id: "Galaxy") { l in l.set("galaxy", .round, .star, .thin, .void, lashes: false, glow: 1) }
+        case "gilded": return Preset(id: "Gilded") { l in l.set("gilded", .almond, .cat, .bold, .classic, lashes: true, glow: 0.7) }
+        case "toxic": return Preset(id: "Toxic") { l in l.set("toxic", .tall, .round, .none, .void, lashes: false, glow: 1) }
+        case "bloodmoon": return Preset(id: "Blood moon") { l in l.set("bloodmoon", .almond, .round, .bushy, .tired, lashes: false, glow: 0.6) }
+        default: return nil
+        }
+    }
+
     private func set(_ iris: String, _ o: EyeOutline, _ p: PupilStyle, _ b: BrowStyle, _ s: ScleraStyle, lashes: Bool, glow: Double) {
         irisID = iris; outline = o; pupil = p; brow = b; sclera = s; self.lashes = lashes; self.glow = glow
         oddEyes = false; size = 1; spacing = 1

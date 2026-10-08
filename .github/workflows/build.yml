@@ -42,52 +42,33 @@ jobs:
           app=$(find dd/Build/Products -name "Minder.app" -path "*iphonesimulator*" | head -1)
           xcrun simctl install "$udid" "$app"
           mkdir -p shots
-          xcrun simctl terminate "$udid" com.mattbusel.minder || true
-          xcrun simctl launch "$udid" com.mattbusel.minder -shot idle
-          sleep 6
-          xcrun simctl io "$udid" screenshot "shots/00.png"
-          xcrun simctl terminate "$udid" com.mattbusel.minder || true
-          xcrun simctl launch "$udid" com.mattbusel.minder -shot work
-          sleep 6
-          xcrun simctl io "$udid" screenshot "shots/01.png"
-          xcrun simctl terminate "$udid" com.mattbusel.minder || true
-          xcrun simctl launch "$udid" com.mattbusel.minder -shot work -expr happy
-          sleep 6
-          xcrun simctl io "$udid" screenshot "shots/02.png"
-          xcrun simctl terminate "$udid" com.mattbusel.minder || true
-          xcrun simctl launch "$udid" com.mattbusel.minder -shot work -expr suspicious
-          sleep 6
-          xcrun simctl io "$udid" screenshot "shots/03.png"
-          xcrun simctl terminate "$udid" com.mattbusel.minder || true
-          xcrun simctl launch "$udid" com.mattbusel.minder -shot settings
-          sleep 6
-          xcrun simctl io "$udid" screenshot "shots/04.png"
-          xcrun simctl terminate "$udid" com.mattbusel.minder || true
-          xcrun simctl launch "$udid" com.mattbusel.minder -shot work -preset Robot
-          sleep 6
-          xcrun simctl io "$udid" screenshot "shots/05.png"
-          xcrun simctl terminate "$udid" com.mattbusel.minder || true
-          xcrun simctl launch "$udid" com.mattbusel.minder -shot idle -preset Cat -expr curious
-          sleep 6
-          xcrun simctl io "$udid" screenshot "shots/06.png"
-          xcrun simctl terminate "$udid" com.mattbusel.minder || true
-          xcrun simctl launch "$udid" com.mattbusel.minder -shot work -preset Crush -expr happy
-          sleep 6
-          xcrun simctl io "$udid" screenshot "shots/07.png"
-          xcrun simctl terminate "$udid" com.mattbusel.minder || true
-          xcrun simctl launch "$udid" com.mattbusel.minder -shot idle -preset Night_owl -expr sleepy
-          sleep 6
-          xcrun simctl io "$udid" screenshot "shots/08.png"
-          # The paywall, for the in-app purchase review screenshot. Not a store screenshot.
-          mkdir -p iap
-          xcrun simctl terminate "$udid" com.mattbusel.minder || true
-          xcrun simctl launch "$udid" com.mattbusel.minder -shot paywall
-          sleep 8
-          xcrun simctl io "$udid" screenshot "iap/paywall.png"
-          xcrun simctl terminate "$udid" com.mattbusel.minder || true
-          xcrun simctl launch "$udid" com.mattbusel.minder -shot work -preset Grump -expr stern
-          sleep 6
-          xcrun simctl io "$udid" screenshot "shots/09.png"
+          # Warm-up launch: the first shot after install can come out blank.
+          xcrun simctl launch "$udid" com.mattbusel.minder -shot idle; sleep 8
+          i=0
+          while IFS= read -r line; do
+            [ -z "$line" ] && continue
+            name=$(echo "$line" | cut -d'|' -f1); args=$(echo "$line" | cut -d'|' -f2)
+            xcrun simctl terminate "$udid" com.mattbusel.minder || true
+            xcrun simctl launch "$udid" com.mattbusel.minder $args
+            sleep 8
+            xcrun simctl io "$udid" screenshot "shots/$(printf %02d $i)-$name.png"
+            i=$((i+1))
+          done <<'LIST'
+          idle|-shot idle
+          work|-shot work
+          focus|-shot focus
+          widgets|-shot widgets
+          rescue|-shot rescue
+          shop|-shot shop
+          poster|-shot poster
+          after|-shot after
+          break|-shot break
+          settings|-shot settings
+          paywall|-shot paywall
+          galaxy|-shot idle -preset Galaxy -expr curious
+          happy|-shot work -preset Crush -expr happy
+          suspicious|-shot work -expr suspicious
+          LIST
       - uses: actions/upload-artifact@v4
         if: always()
         with:

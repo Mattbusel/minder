@@ -4,29 +4,36 @@
 
 No account, login or network connection is required.
 
-VERSION 1.1, IN-APP PURCHASE: Minder is now free. One non-consumable in-app purchase, "Minder Pro" (com.mattbusel.minder.pro, $2.99, one time, no subscription), unlocks the full eye designer (all presets, colours, shapes, pupils, brows, sliders and the dice) and Follow my face. The eyes, focus sessions, timer, week and streak, check-ins and pick-up detection stay free, with the Classic, Robot and Cat looks. To see the paywall: tap the settings button (top right), then tap a locked preset (lock icon), the dice, "See Minder Pro" under the frosted designer, or the "Follow my face (Pro)" switch. Buy and Restore purchase are on the paywall; Restore is also on the Minder Pro card in Settings. People who bought the paid version get Pro automatically (checked with StoreKit AppTransaction in production only, so the sandbox always shows the paywall).
+WHAT IS NEW IN 1.2: a daily goal ring and focus streak, session tags and planned lengths, a 5-minute break, a Live Activity (Lock Screen / Dynamic Island timer during a session), Home Screen widgets (Today free, Week with Pro; data shared through the app group group.com.mattbusel.minder), sounds generated on the device (no audio files, no network), a Focus page with stats, shareable posters, Siri/Shortcuts "Start focusing", and seven new in-app purchases.
 
-HOW TO USE: The app opens to a black screen with a pair of animated eyes. Drag the slider at the bottom to the right ("slide to focus") to start a work session. The eyes watch, blink and change expression while a timer runs; tap anywhere to see the controls again, and drag the slider back to stop. The settings button (top right, when not working) opens the eye customisation panel and options.
+IN-APP PURCHASES (StoreKit 2, all optional, no subscriptions; Restore is in Settings > Minder Pro):
+- Minder Pro (existing, $2.99 non-consumable): eye designer, Follow my face, twelve-week history + CSV, pink noise and ocean, custom tags, Week widget.
+- Streak Shield, $0.99 consumable: everyone gets one free shield a month. When a streak of 2+ days misses a day, the main screen shows "Your N-day streak missed yesterday. Save it?"; it opens Focus, where the free shield is used first, then Streak Shield for $0.99. Also in Extras (bag button, top right).
+- Focus Posters, $0.99 consumable (3 credits): the first poster is free. After a session of 5+ minutes a "Poster" button appears above the slider; Focus also has "Make a poster of today". Making a poster uses a credit; it can then be shared.
+- Ambience Pack, $0.99 non-consumable: Rain and Fireplace in Settings > Sound while focusing.
+- Galaxy, Gilded, Toxic, Blood Moon Eyes, $0.99 non-consumables: Extras (bag button). Each adds an iris to the eye designer (usable without Pro), a matching look, and switches the app icon (alternate icons).
 
-CAMERA: "Follow my face" (Pro) is OFF by default. If turned on, the front camera is used only to find the position of a face in each frame (Apple Vision face rectangles) so the eyes can look toward the user. No image is stored, recorded, or transmitted; frames are discarded immediately. The camera is only active during a work session.
+HOW TO USE: the app opens to a black screen with animated eyes. Pick a tag and a plan above the slider (optional), then drag the slider right to start. Tap anywhere to show the controls; drag back to stop. Tap "Today" (top left) for the Focus page. The bag button opens Extras; the sliders button opens Settings (eye designer, Pro, sounds, check-ins).
 
-MOTION: device motion is read during a session to notice when the phone is picked up, which makes the eyes look suspicious. Nothing is stored.
+CAMERA: "Follow my face" (Pro) is off by default. The front camera only finds the position of a face (Apple Vision face rectangles); nothing is stored, recorded or sent.
 
-PRIVACY: no data is collected. Focus minutes are stored locally on the device.
+MOTION: device motion is read during a session to notice when the phone is picked up. Nothing is stored except a count per session.
 
-GUIDELINE 2.1 INFORMATION (a screen recording was sent in the App Review reply)
+NOTIFICATIONS: only for the optional break, asked when a break is first started.
+
+PRIVACY: no data is collected. Focus minutes and sessions stay on the device.
 
 2. PURPOSE AND TARGET AUDIENCE
-Minder is a focus companion. It turns the phone into a pair of animated eyes that watch you while you work. Many people, especially people with ADHD, find it much easier to stay on task when someone is in the room with them ("body doubling"). Minder provides that feeling without another person: you prop the phone on the desk, slide to start a session, and the eyes blink, look around, and react when you pick the phone up. It also removes the phone as a distraction, because the phone is busy being the minder. A gentle check-in chime marks each focus interval, and the app keeps a simple local total of focus minutes and a day streak. The audience is students, remote workers and anyone who struggles to stay focused alone. It is rated 4+.
+Minder is a focus companion: a pair of animated eyes that keep you company while you work ("body doubling"), for people with ADHD or anyone who works better when watched. General audience, rated 4+. It makes no medical claims.
 
 3. SETUP AND ACCESS
-No setup, login, credentials or sample files are required. Launch the app and the eyes appear. Drag the slider at the bottom to the right to start a session; tap anywhere to show the controls again; drag the slider back to stop. The settings button (top right, when not in a session) opens eye customisation and options. "Follow my face" is OFF by default; if turned on, the app asks for camera permission and uses the front camera only to find the position of a face so the eyes can look toward the user. The app works fully with the camera off.
+No setup or credentials. Launch, slide to focus.
 
-4. EXTERNAL SERVICES, TOOLS AND PLATFORMS
-None. The app makes no network requests of its own; the only traffic is StoreKit 2 talking to the App Store for the in-app purchase. It uses no data providers, no authentication service, no third-party payment processor, no AI service, no analytics, no crash reporting, no advertising SDK and no third-party frameworks. It is built only with Apple frameworks: SwiftUI, StoreKit 2, AVFoundation and Vision (optional on-device face position; frames are discarded immediately and never stored or transmitted), CoreMotion (to notice the phone being picked up during a session) and UIKit haptics. Focus minutes are stored locally on the device.
+4. EXTERNAL SERVICES
+None. No network requests except StoreKit 2. No analytics, ads, AI or third-party SDKs. Built with SwiftUI, WidgetKit, ActivityKit, AppIntents, AVFoundation (generated sound and the optional camera), Vision, CoreMotion, StoreKit 2.
 
 5. REGIONAL DIFFERENCES
-None. The app functions identically in every region. It is offline and has no region-dependent features, content or restrictions.
+None.
 
 6. REGULATED INDUSTRY / PROTECTED MATERIAL
-Not applicable. The app does not operate in a regulated industry. It is a productivity tool and makes no medical claims; it does not diagnose, treat or monitor any condition. All art, animation, text and code are my own original work, and no third-party or licensed material appears.
+Not applicable. All art, animation, sound and code are my own original work.

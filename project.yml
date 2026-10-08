@@ -7,7 +7,7 @@ options:
   createIntermediateGroups: true
 settings:
   base:
-    MARKETING_VERSION: "1.1"
+    MARKETING_VERSION: "1.2"
     CURRENT_PROJECT_VERSION: "1"
     SWIFT_VERSION: "5.0"
     CODE_SIGN_STYLE: Manual
@@ -18,15 +18,25 @@ targets:
   Minder:
     type: application
     platform: iOS
+    dependencies:
+      - target: MinderWidgets
     sources:
       - path: Sources
       - path: Resources/PrivacyInfo.xcprivacy
         buildPhase: resources
       - path: Resources/Assets.xcassets
         buildPhase: resources
+    entitlements:
+      path: Resources/Minder.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.mattbusel.minder
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.mattbusel.minder
+        PROVISIONING_PROFILE_SPECIFIER: "${APP_PROFILE}"
+        ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES: "AppIcon-Galaxy AppIcon-Gilded AppIcon-Toxic AppIcon-Bloodmoon"
+        ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS: YES
         PRODUCT_NAME: Minder
         INFOPLIST_KEY_CFBundleDisplayName: Minder
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
@@ -46,7 +56,36 @@ targets:
         UIUserInterfaceStyle: Dark
         UIStatusBarStyle: UIStatusBarStyleLightContent
         ITSAppUsesNonExemptEncryption: false
+        NSSupportsLiveActivities: true
         NSCameraUsageDescription: "The eyes use the front camera to follow your face while you work. Nothing is recorded, saved or sent anywhere; frames are read on the device and dropped."
+  MinderWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Widgets
+      - path: Sources/Shared
+      - path: Resources/PrivacyInfo.xcprivacy
+        buildPhase: resources
+    entitlements:
+      path: Widgets/MinderWidgets.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.mattbusel.minder
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mattbusel.minder.widgets
+        PRODUCT_NAME: MinderWidgets
+        PROVISIONING_PROFILE_SPECIFIER: "${EXT_PROFILE}"
+        TARGETED_DEVICE_FAMILY: "1"
+        SKIP_INSTALL: YES
+    info:
+      path: Widgets/Info.plist
+      properties:
+        CFBundleDisplayName: Minder
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
 schemes:
   Minder:
     build:
