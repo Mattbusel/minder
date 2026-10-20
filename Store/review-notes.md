@@ -1,39 +1,34 @@
 # App Review notes
 
 ---
-
 No account, login or network connection is required.
 
-WHAT IS NEW IN 1.2: a daily goal ring and focus streak, session tags and planned lengths, a 5-minute break, a Live Activity (Lock Screen / Dynamic Island timer during a session), Home Screen widgets (Today free, Week with Pro; data shared through the app group group.com.mattbusel.minder), sounds generated on the device (no audio files, no network), a Focus page with stats, shareable posters, Siri/Shortcuts "Start focusing", and seven new in-app purchases.
+NEW IN 1.3: an auto-renewable subscription, Minder Plus (group "Minder Plus": com.mattbusel.minder.plus.monthly $2.99/month, com.mattbusel.minder.plus.yearly $14.99/year with a 1-week free trial). Plus = everything in Minder Pro plus, while subscribed: every eye pack and the ambience pack, the Eye of the Month (a new look each month), 3 Streak Shields + 5 poster credits added each month, Insights (Focus page, best hours/average/pick-ups/month calendar), and iCloud key-value backup of focus history. Also new: a monthly challenge (free), Lock Screen/StandBy widgets, an iOS 18 Control Center control "Start focusing", Siri "How long have I focused in Minder", TipKit tips.
 
-IN-APP PURCHASES (StoreKit 2, all optional, no subscriptions; Restore is in Settings > Minder Pro):
-- Minder Pro (existing, $2.99 non-consumable): eye designer, Follow my face, twelve-week history + CSV, pink noise and ocean, custom tags, Week widget.
-- Streak Shield, $0.99 consumable: everyone gets one free shield a month. When a streak of 2+ days misses a day, the main screen shows "Your N-day streak missed yesterday. Save it?"; it opens Focus, where the free shield is used first, then Streak Shield for $0.99. Also in Extras (bag button, top right).
-- Focus Posters, $0.99 consumable (3 credits): the first poster is free. After a session of 5+ minutes a "Poster" button appears above the slider; Focus also has "Make a poster of today". Making a poster uses a credit; it can then be shared.
-- Ambience Pack, $0.99 non-consumable: Rain and Fireplace in Settings > Sound while focusing.
-- Galaxy, Gilded, Toxic, Blood Moon Eyes, $0.99 non-consumables: Extras (bag button). Each adds an iris to the eye designer (usable without Pro), a matching look, and switches the app icon (alternate icons).
+WHERE TO FIND THE SUBSCRIPTION: bag button (top right) > "All of it with Minder Plus"; Settings (sliders button) > Minder Plus > See; Focus page (tap Today, top left) > Insights > See Minder Plus; Focus > the month challenge card > Eye of the Month > Get Plus. The paywall shows each plan's price and period, the trial terms, auto-renewal text, Terms of Use (Apple standard EULA) and Privacy Policy links, Restore Purchases, Redeem code and Manage subscription. Minder Pro (one-time, $2.99, unchanged) is the third option on the same paywall.
 
-HOW TO USE: the app opens to a black screen with animated eyes. Pick a tag and a plan above the slider (optional), then drag the slider right to start. Tap anywhere to show the controls; drag back to stop. Tap "Today" (top left) for the Focus page. The bag button opens Extras; the sliders button opens Settings (eye designer, Pro, sounds, check-ins).
+OTHER IN-APP PURCHASES (unchanged, StoreKit 2; Restore in Settings > Minder Plus card):
+- Streak Shield $0.99 consumable (one shield a month is included for everyone). Focus Posters $0.99 consumable, 3 credits (first poster free). Ambience Pack and Galaxy/Gilded/Toxic/Blood Moon Eyes, $0.99 non-consumables, in Extras (bag button).
 
-CAMERA: "Follow my face" (Pro) is off by default. The front camera only finds the position of a face (Apple Vision face rectangles); nothing is stored, recorded or sent.
+HOW TO USE: black screen with animated eyes. Pick a tag and plan above the slider, drag the slider right to start, drag back to stop. Tap "Today" (top left) for the Focus page. Deep links: minderfocus://focus, minderfocus://challenge (used by our In-App Events), minderfocus://start.
 
-MOTION: device motion is read during a session to notice when the phone is picked up. Nothing is stored except a count per session.
-
-NOTIFICATIONS: only for the optional break, asked when a break is first started.
-
-PRIVACY: no data is collected. Focus minutes and sessions stay on the device.
+CAMERA: "Follow my face" (Pro/Plus) is off by default; front camera finds a face position with Apple Vision; nothing stored, recorded or sent.
+MOTION: read during a session to notice the phone being picked up; only a count per session is kept.
+NOTIFICATIONS: only for the optional break.
+ICLOUD: Plus backup uses NSUbiquitousKeyValueStore in the user's own iCloud. Nothing reaches the developer.
+PRIVACY: no data is collected.
 
 2. PURPOSE AND TARGET AUDIENCE
-Minder is a focus companion: a pair of animated eyes that keep you company while you work ("body doubling"), for people with ADHD or anyone who works better when watched. General audience, rated 4+. It makes no medical claims.
+A focus companion ("body doubling") for people with ADHD or anyone who works better when watched. Rated 4+. No medical claims; not a medical device.
 
 3. SETUP AND ACCESS
-No setup or credentials. Launch, slide to focus.
+None. Launch, slide to focus.
 
 4. EXTERNAL SERVICES
-None. No network requests except StoreKit 2. No analytics, ads, AI or third-party SDKs. Built with SwiftUI, WidgetKit, ActivityKit, AppIntents, AVFoundation (generated sound and the optional camera), Vision, CoreMotion, StoreKit 2.
+None besides StoreKit 2 and the user's iCloud key-value store. No analytics, ads, AI or third-party SDKs.
 
 5. REGIONAL DIFFERENCES
 None.
 
 6. REGULATED INDUSTRY / PROTECTED MATERIAL
-Not applicable. All art, animation, sound and code are my own original work.
+Not applicable. All art, animation, sound and code are original.

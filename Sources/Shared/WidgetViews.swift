@@ -143,3 +143,41 @@ struct FocusActivityView: View {
         .padding(16)
     }
 }
+
+/// Lock Screen: today's goal ring with the eyes in it.
+struct LockCircularView: View {
+    let snap: FocusSnapshot
+    var body: some View {
+        ZStack {
+            Circle().stroke(.white.opacity(0.25), lineWidth: 4)
+            Circle().trim(from: 0, to: snap.fraction).stroke(.white, style: StrokeStyle(lineWidth: 4, lineCap: .round)).rotationEffect(.degrees(-90))
+            VStack(spacing: 1) {
+                Image(systemName: snap.fraction >= 1 ? "checkmark" : "eye.fill").font(.system(size: 11, weight: .bold))
+                Text("\(Int(snap.fraction * 100))%").font(.system(size: 12, weight: .semibold, design: .rounded))
+            }
+        }
+        .padding(2)
+        .accessibilityLabel("\(spoken(snap.today)) of \(spoken(snap.goal)) focused today")
+    }
+}
+
+/// Lock Screen: today, the goal and the streak in a line or two.
+struct LockRectView: View {
+    let snap: FocusSnapshot
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 4) {
+                Image(systemName: "eye.fill").font(.system(size: 11, weight: .bold))
+                Text("MINDER").font(.system(size: 11, weight: .bold)).tracking(1)
+            }
+            Text("\(spoken(snap.today)) of \(spoken(snap.goal))").font(.system(size: 17, weight: .semibold, design: .rounded))
+            Gauge(value: snap.fraction) { EmptyView() }.gaugeStyle(.accessoryLinearCapacity)
+            if snap.streak > 0 { Text("\(snap.streak)-day streak").font(.system(size: 11, weight: .medium)) }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+func lockInline(_ snap: FocusSnapshot) -> String {
+    snap.streak > 1 ? "\(spoken(snap.today)) focused · \(snap.streak)-day streak" : "\(spoken(snap.today)) focused today"
+}

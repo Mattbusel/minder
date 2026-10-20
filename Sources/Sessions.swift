@@ -43,6 +43,16 @@ final class SessionLog {
         sessions.append(s)
         save()
     }
+    /// Adds sessions this phone does not have yet (iCloud backup). True if anything was added.
+    func merge(_ other: [Session]) -> Bool {
+        let have = Set(sessions.map(\.id))
+        let new = other.filter { !have.contains($0.id) }
+        guard !new.isEmpty else { return false }
+        sessions.append(contentsOf: new)
+        sessions.sort { $0.start < $1.start }
+        save()
+        return true
+    }
     private func save() {
         if let d = try? JSONEncoder().encode(sessions) { try? d.write(to: url, options: .atomic) }
     }
@@ -109,26 +119,15 @@ enum WidgetMirror {
     }
 }
 
-/// "Start focus in Minder": opens the app and starts a session.
-struct StartFocusIntent: AppIntent {
-    static var title: LocalizedStringResource = "Start focusing"
-    static var description = IntentDescription("Opens Minder and starts a focus session.")
-    static var openAppWhenRun = true
-    func perform() async throws -> some IntentResult {
-        UserDefaults.standard.set(true, forKey: "pendingStart")
-        await MainActor.run { NotificationCenter.default.post(name: .minderStartFocus, object: nil) }
-        return .result()
-    }
-}
-
 struct MinderShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
-        AppShortcut(intent: StartFocusIntent(), phrases: ["Start focusing in \(.applicationName)", "Focus with \(.applicationName)"],
+        AppShortcut(intent: StartFocusIntent(), phrases: ["Start focusing in \(.applicationName)", "Focus with \(.applicationName)",
+                                                           "Start a \(.applicationName) session"],
                     shortTitle: "Start focusing", systemImageName: "eye.fill")
+        AppShortcut(intent: TodayFocusIntent(), phrases: ["How long have I focused in \(.applicationName)", "My focus today in \(.applicationName)"],
+                    shortTitle: "Focus today", systemImageName: "chart.bar.fill")
     }
 }
-
-extension Notification.Name { static let minderStartFocus = Notification.Name("minderStartFocus") }
 
 enum BreakAlarm {
     static func schedule(at end: Date) {

@@ -1,8 +1,24 @@
+import StoreKit
 import SwiftUI
+import TipKit
+
+struct SlideTip: Tip {
+    var title: Text { Text("Prop it up, then slide") }
+    var message: Text? { Text("Stand the phone up facing you and slide to focus. The eyes keep you company until you slide back.") }
+    var image: Image? { Image(systemName: "eye") }
+}
+
+struct StatsTip: Tip {
+    var title: Text { Text("Your day, your streak") }
+    var message: Text? { Text("Tap here for your goal, streak, the week and this month's challenge.") }
+    var image: Image? { Image(systemName: "flame") }
+}
 
 struct RootView: View {
     @Environment(Pro.self) private var pro
     @Environment(Extras.self) private var extras
+    @Environment(Plus.self) private var plus
+    @Environment(\.requestReview) private var requestReview
     @State private var look = Look.shared
     @AppStorage("camera") private var cameraOn = false
     @AppStorage("motion") private var motionOn = true
@@ -24,6 +40,11 @@ struct RootView: View {
     @State private var showSettings = false
     @State private var showFocus = false
     @State private var showShop = false
+    @State private var showMonth = false
+    @State private var rootPaywall: Pro.Reason? = nil
+    @State private var focusJump: String? = nil
+    private let slideTip = SlideTip()
+    private let statsTip = StatsTip()
     @State private var poster: PosterKind? = nil
     @State private var toast: String?
     @State private var chimes = 0
@@ -79,6 +100,7 @@ struct RootView: View {
                         setupRow.padding(.bottom, 12).transition(.opacity)
                     }
                     FocusSlider(on: $working, tint: iris) { on in on ? startWork() : stopWork() }
+                        .popoverTip(slideTip, arrowEdge: .bottom)
                         .padding(.horizontal, 22)
                         .padding(.bottom, 14)
                         .opacity(controlsVisible ? 1 : 0.1)
@@ -97,10 +119,12 @@ struct RootView: View {
                 .presentationCornerRadius(34)
         }
         .sheet(isPresented: $showFocus) {
-            FocusSheet().presentationBackground(.black).presentationCornerRadius(34)
+            FocusSheet(jump: focusJump).presentationBackground(.black).presentationCornerRadius(34)
                 .sheet(item: Binding(get: { pro.paywall }, set: { pro.paywall = $0 })) { r in PaywallView(reason: r).presentationBackground(.black).presentationCornerRadius(34) }
         }
         .sheet(isPresented: $showShop) { ShopSheet().presentationBackground(.black).presentationCornerRadius(34) }
+        .sheet(isPresented: $showMonth) { MonthSheet().presentationBackground(.black).presentationCornerRadius(34) }
+        .sheet(item: $rootPaywall) { r in PaywallView(reason: r).presentationBackground(.black).presentationCornerRadius(34) }
         .sheet(item: $poster) { k in PosterSheet(kind: k).presentationBackground(.black).presentationCornerRadius(34) }
         .sheet(isPresented: $newTag) { tagSheet.presentationDetents([.height(240)]).presentationBackground(Color(white: 0.06)) }
         .onAppear(perform: boot)
@@ -113,10 +137,21 @@ struct RootView: View {
         .onChange(of: phase) { _, p in
             if p == .active {
                 if working { applyCamera(cameraOn); motion.start() }
-                if !working, UserDefaults.standard.bool(forKey: "pendingStart") { begin() }
+                if !working, Shared.pendingStart { begin() }
             } else { tracker.stop(); motion.stop() }
         }
         .onReceive(NotificationCenter.default.publisher(for: .minderStartFocus)) { _ in if !working { begin() } }
+        .onOpenURL { url in
+            // minderfocus://start (widgets), ://focus, ://month (In-App Events), ://plus
+            guard url.scheme == "minderfocus" else { return }
+            switch url.host() {
+            case "start": Shared.pendingStart = true; if !working { begin() }
+            case "focus": showFocus = true
+            case "month", "challenge": showMonth = true
+            case "plus": rootPaywall = .plus
+            default: break
+            }
+        }
         .task {
             // Controls fade away once you have been left alone for a few seconds; the plan and the break keep time.
             while !Task.isCancelled {
@@ -181,7 +216,7 @@ struct RootView: View {
             }
         } else {
             HStack(alignment: .center, spacing: 14) {
-                Button { Haptics.tap(); showFocus = true } label: {
+                Button { Haptics.tap(); statsTip.invalidate(reason: .actionPerformed); showFocus = true } label: {
                     HStack(spacing: 12) {
                         ZStack {
                             GoalRing(fraction: min(1, Ledger.today / Double(goalMinutes * 60)), tint: iris, width: 4)
@@ -204,7 +239,8 @@ struct RootView: View {
                     }
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Focus stats")
+                .popoverTip(statsTip, arrowEdge: .top)
+                .accessibilityLabel("Focus stats, \(spoken(Ledger.today)) today")
                 Spacer()
                 roundButton("bag", label: "Extras") { showShop = true }
                 roundButton("slider.horizontal.3", label: "Settings") { showSettings = true }
@@ -254,7 +290,7 @@ struct RootView: View {
                                 .background(tag == t ? AnyShapeStyle(iris.light) : AnyShapeStyle(Color.white.opacity(0.07)), in: Capsule())
                         }.buttonStyle(.plain)
                     }
-                    Button { if pro.unlocked { newTag = true } else { pro.ask(.tags); showSettings = true } } label: {
+                    Button { if pro.unlocked { newTag = true } else { rootPaywall = .tags } } label: {
                         Image(systemName: pro.unlocked ? "plus" : "lock.fill").font(.system(size: 12, weight: .bold)).foregroundStyle(.white.opacity(0.6))
                             .frame(width: 32, height: 32).background(Color.white.opacity(0.07), in: Circle())
                     }.buttonStyle(.plain).accessibilityLabel("New tag")
@@ -357,6 +393,9 @@ struct RootView: View {
             if mode == "settings" { showSettings = true }
             if mode == "widgets" { showcase = true }
             if mode == "focus" { showFocus = true }
+            if mode == "insights" { focusJump = "insights"; showFocus = true }
+            if mode == "month" { showMonth = true }
+            if mode == "plus" { rootPaywall = .plus }
             if mode == "shop" { showShop = true }
             if mode == "poster" { poster = .today }
             if mode == "paywall" { showSettings = true; pro.paywall = .designer }
@@ -369,7 +408,8 @@ struct RootView: View {
 
         WidgetMirror.push(pro: pro.unlocked, iris: look.irisID)
         if args.contains("-demoAutoplay") { Task { await autoplay() } }
-        else if UserDefaults.standard.bool(forKey: "pendingStart") { begin() }
+        else if args.contains("-preview") { Task { await previewReel() } }
+        else if Shared.pendingStart { begin() }
     }
 
     /// App Review recording: a typical first use, through the same functions the controls call.
@@ -420,7 +460,7 @@ struct RootView: View {
 
     /// Start from outside the slider (Shortcuts, Siri).
     private func begin() {
-        UserDefaults.standard.set(false, forKey: "pendingStart")
+        Shared.pendingStart = false
         withAnimation(.spring(duration: 0.6)) { working = true }
         startWork()
     }
@@ -450,11 +490,13 @@ struct RootView: View {
         SoundEngine.shared.play(allowed(Ambience(rawValue: ambience) ?? .off))
         FocusActivity.start(at: workStart, planned: planned, tag: tag, iris: look.irisID)
         flashToast("Okay. I'm watching.")
+        slideTip.invalidate(reason: .actionPerformed)
     }
 
     private func stopWork() {
         let worked = Date.now.timeIntervalSince(workStart)
         let before = Ledger.today
+        let challengeBefore = Challenge.current().done
         Ledger.add(worked)
         SessionLog.shared.add(Session(start: workStart, seconds: worked, tag: tag, planned: planned, pickups: pickups))
         brain.disengage(at: now)
@@ -466,12 +508,70 @@ struct RootView: View {
         controlsVisible = true
         Haptics.tap(.medium)
         let goal = Double(goalMinutes * 60)
-        if before < goal && Ledger.today >= goal {
+        if !challengeBefore && Challenge.current().done {
+            brain.cheer(at: now)
+            Haptics.success()
+            flashToast("Monthly challenge done. Look at you.")
+            askForReview()
+        } else if before < goal && Ledger.today >= goal {
+            brain.cheer(at: now)
             flashToast("Daily goal done. \(spoken(Ledger.today)) today.")
+            askForReview()
         } else {
             flashToast(worked >= 60 ? "\(spoken(worked)) of focus. Nice." : "Short one. That's fine.")
         }
         if worked >= 5 * 60 { offerAfter = .now.addingTimeInterval(90) }
+    }
+
+    /// Only at a happy moment (a goal or a challenge just done), after a few real sessions, once per version.
+    private func askForReview() {
+        let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
+        guard SessionLog.shared.sessions.count >= 4, UserDefaults.standard.string(forKey: "reviewAsked") != v,
+              !args.contains("-shot") else { return }
+        UserDefaults.standard.set(v, forKey: "reviewAsked")
+        Task { try? await Task.sleep(for: .seconds(2)); requestReview() }
+    }
+
+    /// App Store preview video: a short reel through the real screens, recorded in CI.
+    @MainActor private func previewReel() async {
+        func wait(_ s: Double) async { try? await Task.sleep(for: .seconds(s)) }
+        Ledger.seed(); SessionLog.shared.seed()
+        Shared.goalMinutes = 120; goalMinutes = 120
+        tag = "Write"; planned = 50
+        await wait(2.5)
+        for p in [CGPoint(x: -0.7, y: -0.2), CGPoint(x: 0.7, y: 0.25), CGPoint(x: 0, y: 0)] {
+            brain.touched(at: p, t: now); await wait(1.0)
+        }
+        withAnimation(.spring(duration: 0.6)) { working = true }
+        startWork()
+        await wait(4)
+        brain.phoneMoved(at: now)
+        await wait(3)
+        reveal()
+        workStart = Date.now.addingTimeInterval(-52 * 60)
+        withAnimation(.spring(duration: 0.6)) { working = false }
+        stopWork()
+        await wait(2)
+        startBreak()
+        await wait(2.5)
+        endBreak(alarm: false)
+        showFocus = true
+        await wait(3.5)
+        showFocus = false
+        await wait(1)
+        showMonth = true
+        await wait(3.5)
+        showMonth = false
+        await wait(1)
+        for id in ["Crush", "Night owl", "Cat"] {
+            withAnimation(.spring(duration: 0.4)) { Look.presets.first { $0.id == id }?.apply(look) }
+            brain.touched(at: CGPoint(x: Double.random(in: -0.5...0.5), y: 0), t: now)
+            await wait(1.3)
+        }
+        withAnimation(.spring(duration: 0.4)) { Look.packPreset("galaxy")?.apply(look) }
+        await wait(2)
+        let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        try? Data().write(to: docs.appendingPathComponent("demo_done"))
     }
 
     private func startBreak() {
@@ -479,7 +579,7 @@ struct RootView: View {
         breakEnds = end
         offerAfter = nil
         brain.resting = true
-        BreakAlarm.schedule(at: end)
+        if !args.contains("-preview") { BreakAlarm.schedule(at: end) }
         FocusActivity.onBreak(until: end, iris: look.irisID)
         Haptics.tap(.medium)
     }

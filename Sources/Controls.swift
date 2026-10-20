@@ -137,7 +137,9 @@ struct SettingsSheet: View {
     @Binding var chimeMinutes: Int
     @Binding var ambience: String
     @Environment(Extras.self) private var extras
+    @Environment(Plus.self) private var plus
     @State private var shop = false
+    @State private var backedUp: Date? = CloudBackup.lastBackup
     @Environment(\.dismiss) private var dismiss
     @State private var cameraDenied = false
     @State private var preview = Brain()
@@ -154,7 +156,7 @@ struct SettingsSheet: View {
                         Image(systemName: "xmark").font(.system(size: 14, weight: .bold))
                             .foregroundStyle(.white.opacity(0.7))
                             .frame(width: 34, height: 34).background(.white.opacity(0.1), in: Circle())
-                    }
+                    }.accessibilityLabel("Close")
                 }
 
                 section("Eyes") { EyeDesigner(look: look, brain: preview) }
@@ -166,7 +168,7 @@ struct SettingsSheet: View {
                         HStack(spacing: -8) { ForEach(IrisStyle.packs) { p in IrisSwatch(style: p).frame(width: 24, height: 24) } }
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Extras").font(.system(size: 16, weight: .medium))
-                            Text("Eye packs, sounds, Streak Shields and posters. 99¢ each.").font(.system(size: 13)).foregroundStyle(.white.opacity(0.45))
+                            Text(plus.active ? "Every pack and sound is yours with Plus. Shields and posters too." : "Eye packs, sounds, Streak Shields and posters.").font(.system(size: 13)).foregroundStyle(.white.opacity(0.45))
                         }
                         Spacer()
                         Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(.white.opacity(0.4))
@@ -189,7 +191,7 @@ struct SettingsSheet: View {
                                 Text(a.title).font(.system(size: 16, weight: .medium))
                                 Spacer()
                                 if ambience == a.rawValue && open { Image(systemName: "checkmark").foregroundStyle(IrisStyle.named(irisID).light) }
-                                else if !open { Text(a.tier == .pro ? "PRO" : "99¢").font(.system(size: 10, weight: .bold)).tracking(1).foregroundStyle(.black).padding(.horizontal, 7).padding(.vertical, 3).background(IrisStyle.named(irisID).light, in: Capsule()) }
+                                else if !open { Text(a.tier == .pro ? "PRO" : "EXTRA").font(.system(size: 10, weight: .bold)).tracking(1).foregroundStyle(.black).padding(.horizontal, 7).padding(.vertical, 3).background(IrisStyle.named(irisID).light, in: Capsule()) }
                             }
                             .padding(.horizontal, 16).padding(.vertical, 11)
                             .contentShape(Rectangle())
@@ -198,6 +200,25 @@ struct SettingsSheet: View {
                 }
 
                 WeekCard(tint: IrisStyle.named(irisID))
+
+                section("Backup") {
+                    HStack(spacing: 14) {
+                        icon("icloud.fill")
+                        VStack(alignment: .leading, spacing: 2) {
+                            HStack(spacing: 6) { Text("iCloud backup").font(.system(size: 16, weight: .medium)); PlusBadge(tint: IrisStyle.named(irisID)) }
+                            Text(plus.active ? (backedUp.map { "Backed up \($0.formatted(.relative(presentation: .named)))." } ?? "Your focus history, in your own iCloud.") : "Keep your history and streak safe in your own iCloud, and bring them to a new phone.")
+                                .font(.system(size: 13)).foregroundStyle(.white.opacity(0.45)).fixedSize(horizontal: false, vertical: true)
+                        }
+                        Spacer(minLength: 4)
+                        Button {
+                            if plus.active { CloudBackup.pull(); CloudBackup.push(); backedUp = .now; Haptics.success() } else { pro.askPlus(.backup) }
+                        } label: {
+                            Text(plus.active ? "Back up" : "See").font(.system(size: 14, weight: .semibold, design: .rounded)).foregroundStyle(.black)
+                                .padding(.horizontal, 14).frame(height: 32).background(IrisStyle.named(irisID).light, in: Capsule())
+                        }.buttonStyle(.plain)
+                    }
+                    .padding(16)
+                }
 
                 section("While you work") {
                     toggle(pro.unlocked ? "Follow my face" : "Follow my face (Pro)", "Uses the front camera to track where you are. Nothing is recorded or leaves the phone.",
@@ -233,7 +254,7 @@ struct SettingsSheet: View {
                     toggle("Haptics", nil, icon: "hand.tap", isOn: $hapticsOn)
                 }
 
-                Text("Tip: prop the phone up facing you and slide to focus. Tap the eyes any time. Say \"Start focusing in Minder\" to Siri, or add the Today widget to your Home Screen.")
+                Text("Tip: prop the phone up facing you and slide to focus. Tap the eyes any time. Say \"Start focusing in Minder\" to Siri, add the Start focusing control to Control Center, or put the Today widget on your Home Screen or Lock Screen.")
                     .font(.system(size: 13)).foregroundStyle(.white.opacity(0.35))
                     .frame(maxWidth: .infinity, alignment: .center).multilineTextAlignment(.center)
             }

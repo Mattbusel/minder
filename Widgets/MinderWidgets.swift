@@ -1,4 +1,5 @@
 import ActivityKit
+import AppIntents
 import SwiftUI
 import WidgetKit
 
@@ -7,7 +8,11 @@ struct MinderWidgetBundle: WidgetBundle {
     var body: some Widget {
         TodayWidget()
         WeekWidget()
+        LockWidget()
         FocusLiveActivity()
+        if #available(iOS 18.0, *) {
+            StartFocusControl()
+        }
     }
 }
 
@@ -36,9 +41,10 @@ struct TodayWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: "today", provider: Provider()) { e in
             TodayWidgetView(snap: e.snap).containerBackground(.black, for: .widget)
+                .widgetURL(URL(string: "minderfocus://start"))
         }
         .configurationDisplayName("Today")
-        .description("Today's focus against your goal, and your streak.")
+        .description("Today's focus against your goal and your streak. Tap it to start focusing.")
         .supportedFamilies([.systemSmall])
     }
 }
@@ -48,11 +54,60 @@ struct WeekWidget: Widget {
         StaticConfiguration(kind: "week", provider: Provider()) { e in
             Group {
                 if e.snap.pro { WeekWidgetView(snap: e.snap) } else { LockedWeekView(iris: e.snap.iris) }
-            }.containerBackground(.black, for: .widget)
+            }
+            .overlay(alignment: .topTrailing) {
+                Link(destination: URL(string: "minderfocus://start")!) {
+                    Image(systemName: "eye.fill").font(.system(size: 13, weight: .bold)).foregroundStyle(.black)
+                        .frame(width: 30, height: 30).background(e.snap.iris.light, in: Circle())
+                }
+                .accessibilityLabel("Start focusing")
+            }
+            .containerBackground(.black, for: .widget)
+            .widgetURL(URL(string: "minderfocus://focus"))
         }
         .configurationDisplayName("Week")
         .description("Your focus this week, day by day.")
         .supportedFamilies([.systemMedium])
+    }
+}
+
+/// Lock Screen and StandBy: the goal ring, a line with the streak, or an inline status.
+struct LockWidget: Widget {
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: "lock", provider: Provider()) { e in
+            LockWidgetView(snap: e.snap)
+                .containerBackground(.clear, for: .widget)
+                .widgetURL(URL(string: "minderfocus://start"))
+        }
+        .configurationDisplayName("Focus")
+        .description("Today's focus and streak on your Lock Screen. Tap to start focusing.")
+        .supportedFamilies([.accessoryCircular, .accessoryRectangular, .accessoryInline])
+    }
+}
+
+struct LockWidgetView: View {
+    @Environment(\.widgetFamily) private var family
+    let snap: FocusSnapshot
+    var body: some View {
+        switch family {
+        case .accessoryCircular: LockCircularView(snap: snap)
+        case .accessoryRectangular: LockRectView(snap: snap)
+        default: Label(lockInline(snap), systemImage: "eye.fill")
+        }
+    }
+}
+
+/// Control Center, the Lock Screen and the Action button: one tap starts a session.
+@available(iOS 18.0, *)
+struct StartFocusControl: ControlWidget {
+    var body: some ControlWidgetConfiguration {
+        StaticControlConfiguration(kind: "com.mattbusel.minder.start") {
+            ControlWidgetButton(action: StartFocusIntent()) {
+                Label("Start focusing", systemImage: "eye.fill")
+            }
+        }
+        .displayName("Start focusing")
+        .description("Opens Minder and starts a focus session.")
     }
 }
 

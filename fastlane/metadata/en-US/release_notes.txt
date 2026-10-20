@@ -1,13 +1,11 @@
-The eyes got a lot more helpful.
+The eyes learned some new tricks.
 
-• A daily goal ring and a focus streak, with a free Streak Shield every month
-• Tags and planned sessions (25, 50 or 90 minutes)
-• A 5-minute break after a session, while the eyes doze
-• A Lock Screen and Dynamic Island timer
-• Home Screen widgets: Today (free) and Week (Pro)
-• Focus sounds made on the phone: brown noise free, pink noise and ocean with Pro
-• A Focus page: today, your week, where the time went; twelve weeks and CSV with Pro
-• Shareable focus posters, eye packs with matching app icons, and rain and fireplace sounds
-• Siri and Shortcuts: "Start focusing in Minder"
+• Minder Plus: everything in Pro, every eye pack and sound, the Eye of the Month, 3 Streak Shields and 5 posters every month, Insights and iCloud backup
+• Insights: your best focus hours, average session, pick-ups an hour, and the month as a calendar
+• A monthly challenge for everyone, with a trophy when you finish
+• Lock Screen and StandBy widgets; tap the Today widget to start focusing
+• A Start focusing control for Control Center and the Action button (iOS 18)
+• Ask Siri "How long have I focused in Minder"
+• Gentle tips for new users, and lots of small fixes
 
-Your focus history carries over.
+Pro stays exactly as it was, and everything you bought is still yours.

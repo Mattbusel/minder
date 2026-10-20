@@ -4,6 +4,7 @@ import SwiftUI
 struct EyeDesigner: View {
     @Environment(Pro.self) private var pro
     @Environment(Extras.self) private var extras
+    @Environment(Plus.self) private var plus
     @Bindable var look: Look
     let brain: Brain
     @State private var shop = false
@@ -30,6 +31,14 @@ struct EyeDesigner: View {
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
+                    if plus.active {
+                        let m = IrisStyle.ofTheMonth
+                        Button { Haptics.tap(); withAnimation(.spring(duration: 0.4)) { Look.monthPreset(m.id)?.apply(look) } } label: {
+                            Label(m.name, systemImage: "sparkles").font(.system(size: 13, weight: .semibold, design: .rounded))
+                                .foregroundStyle(.black).padding(.horizontal, 14).frame(height: 34)
+                                .background(LinearGradient(colors: [m.inner, m.light], startPoint: .leading, endPoint: .trailing), in: Capsule())
+                        }.buttonStyle(.plain).accessibilityLabel("Eye of the Month, \(m.name)")
+                    }
                     ForEach(Extras.packs.filter { extras.ownsPack($0.id) }) { pk in
                         Button { Haptics.tap(); withAnimation(.spring(duration: 0.4)) { Look.packPreset(pk.id)?.apply(look) } } label: {
                             Text(pk.name).font(.system(size: 13, weight: .semibold, design: .rounded))
@@ -127,7 +136,7 @@ struct EyeDesigner: View {
     private func swatches(selection: Binding<String>) -> some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 14) {
-                ForEach(IrisStyle.all + IrisStyle.packs) { style in
+                ForEach(IrisStyle.all + IrisStyle.packs + (plus.active ? plus.collected : [])) { style in
                     let on = selection.wrappedValue == style.id
                     let open = !IrisStyle.packs.contains(style) || extras.ownsPack(style.id)
                     Button {

@@ -6,6 +6,11 @@ name: Review video
 
 on:
   workflow_dispatch:
+    inputs:
+      flag:
+        description: "-demoAutoplay (App Review walkthrough) or -preview (App Store preview reel)"
+        required: false
+        default: "-demoAutoplay"
 
 jobs:
   record:
@@ -56,7 +61,7 @@ jobs:
           rec=$!
           sleep 4
 
-          xcrun simctl launch "$udid" com.mattbusel.minder -demoAutoplay
+          xcrun simctl launch "$udid" com.mattbusel.minder ${{ inputs.flag || '-demoAutoplay' }}
           data=$(xcrun simctl get_app_container "$udid" com.mattbusel.minder data)
           status=1
           for i in $(seq 1 600); do

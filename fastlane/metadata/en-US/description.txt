@@ -6,26 +6,45 @@ It's body doubling for people with ADHD, or anyone who works better when someone
 
 FREE, AND BUILT TO BRING YOU BACK
 • Slide to focus; a timer and gentle check-ins every 15, 25, 45 or 60 minutes
-• A daily goal ring and a streak, with one free Streak Shield every month for the day life gets in the way
+• A daily goal ring and a streak, with one Streak Shield every month for the day life gets in the way
+• A monthly challenge to chase, with a trophy when you get there
 • Tag each session (Work, Study, Read, Write, Create) and plan it: open-ended, 25, 50 or 90 minutes
 • A 5-minute break when you finish, while the eyes doze off too
 • A Lock Screen and Dynamic Island timer while you focus
-• A Today widget with your goal and streak
+• Widgets for the Home Screen, Lock Screen and StandBy; tap one to start focusing
+• A Start focusing control for Control Center, the Lock Screen and the Action button (iOS 18)
 • Brown noise to focus to, made on the phone
 • Your week, and where the time went, by tag
-• "Start focusing in Minder" with Siri or Shortcuts
+• Siri and Shortcuts: "Start focusing in Minder" and "How long have I focused in Minder"
+
+MINDER PLUS (SUBSCRIPTION)
+Everything in Pro, plus, while you're subscribed:
+• Every eye pack (Galaxy, Gilded, Toxic, Blood moon) and the rain and fireplace sounds
+• The Eye of the Month: a new look every month, kept in your collection
+• 3 Streak Shields and 5 poster credits added at the start of every month
+• Insights: your best focus hours, average session, pick-ups an hour and the month as a calendar
+• iCloud backup of your focus history, in your own iCloud account
+Minder Plus is $2.99 a month or $14.99 a year in the US (local prices vary), and the yearly plan starts with a 1-week free trial for new subscribers.
 
 MINDER PRO, ONE PAYMENT
+Prefer to pay once? Pro is still a single $2.99 purchase with no renewals:
 • Design your own eyes: every colour, shape, pupil, brow, glow and the dice
 • Follow my face: the front camera keeps the eyes on you. Nothing is recorded or leaves the phone
 • Twelve weeks of history, every session, and a CSV export
 • Pink noise and ocean
 • Your own tags, and the Week widget
+Pro owners keep everything they bought.
 
 99-CENT EXTRAS
 • Streak Shields, to keep a streak through a missed day
 • Focus Posters, a shareable poster of a session or a day with your eyes on it (the first one is free)
-• Eye packs: Galaxy, Gilded, Toxic and Blood moon, each with a new iris, a look and a matching app icon
+• Eye packs, each with a new iris, a look and a matching app icon
 • The ambience pack: rain and a fireplace
 
-No account, no ads, no tracking. Your focus history stays on your iPhone.
+SUBSCRIPTION TERMS
+Payment is charged to your Apple ID when you confirm the purchase, or when the free trial ends. The subscription renews automatically at the same price unless it is cancelled at least 24 hours before the end of the current period; your account is charged for renewal within 24 hours before the period ends. You can manage or cancel it any time in Settings > Apple ID > Subscriptions. Cancelling during the free trial costs nothing.
+
+Terms of Use (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+Privacy Policy: https://tensorust.com/apps/minder/privacy/
+
+No account, no ads, no tracking. Your focus history stays on your iPhone (and in your own iCloud if you turn on backup with Plus).

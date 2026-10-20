@@ -57,9 +57,11 @@ final class Extras {
     }
 
     func price(_ id: String) -> String { products[id]?.displayPrice ?? (demo ? "$0.99" : "…") }
-    func owns(_ id: String) -> Bool { owned.contains(id) }
-    func ownsPack(_ id: String) -> Bool { owned.contains(Extras.packID(id)) }
-    var ownsAmbience: Bool { owned.contains(Extras.ambienceID) }
+    /// Minder Plus includes every pack and the ambience pack while it is active.
+    var plus = false
+    func owns(_ id: String) -> Bool { owned.contains(id) || (plus && id != Extras.shieldID && id != Extras.postersID) }
+    func ownsPack(_ id: String) -> Bool { plus || owned.contains(Extras.packID(id)) }
+    var ownsAmbience: Bool { plus || owned.contains(Extras.ambienceID) }
 
     /// One free shield a month for everyone.
     var freeShieldLeft: Bool { d.string(forKey: "extras.freeShieldMonth") != Self.month }
@@ -151,6 +153,7 @@ struct ShopSheet: View {
     @Environment(Pro.self) private var pro
     @Environment(\.dismiss) private var dismiss
     @State private var look = Look.shared
+    @State private var plusSheet = false
 
     var body: some View {
         let tint = look.iris
@@ -164,23 +167,42 @@ struct ShopSheet: View {
                             .frame(width: 34, height: 34).background(.white.opacity(0.1), in: Circle())
                     }.accessibilityLabel("Close")
                 }
-                Text("Small things,\n99 cents each.").font(.system(size: 32, weight: .semibold, design: .rounded))
+                Text("Small things\nfor your eyes.").font(.system(size: 32, weight: .semibold, design: .rounded))
+
+                if !extras.plus {
+                    Button { plusSheet = true } label: {
+                        HStack(spacing: 14) {
+                            Image(systemName: "sparkles").font(.system(size: 16, weight: .semibold)).foregroundStyle(.black)
+                                .frame(width: 40, height: 40).background(tint.light, in: Circle())
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("All of it with Minder Plus").font(.system(size: 16, weight: .semibold))
+                                Text("Every pack and sound, a new eye each month, 3 shields and 5 posters a month.")
+                                    .font(.system(size: 13)).foregroundStyle(.white.opacity(0.5)).fixedSize(horizontal: false, vertical: true)
+                            }
+                            Spacer(minLength: 4)
+                            Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(.white.opacity(0.4))
+                        }
+                        .padding(16)
+                        .background(LinearGradient(colors: [tint.dark.opacity(0.5), Color(white: 0.07)], startPoint: .leading, endPoint: .trailing), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(tint.light.opacity(0.35)))
+                    }.buttonStyle(.plain)
+                }
 
                 // Repeatable
                 VStack(spacing: 0) {
                     row(icon: "shield.lefthalf.filled", title: "Streak Shield",
-                        sub: "Covers a missed day so your streak carries on. One a month is free" + (extras.freeShieldLeft ? " (yours is ready)." : "; you've used this month's.") + " Banked: \(extras.shields).",
+                        sub: "Covers a missed day so your streak carries on. Everyone gets one a month" + (extras.freeShieldLeft ? " (yours is ready)." : "; you've used this month's.") + " Banked: \(extras.shields).",
                         id: Extras.shieldID, tint: tint, owned: false)
                     divider
-                    row(icon: "photo.on.rectangle.angled", title: "Focus Posters, 3 for 99¢",
-                        sub: "A shareable poster of a session or a day, with your eyes on it. " + (extras.firstPosterFree ? "Your first one is free." : "Left: \(extras.posters)."),
+                    row(icon: "photo.on.rectangle.angled", title: "Focus Posters, a pack of 3",
+                        sub: "A shareable poster of a session or a day, with your eyes on it. " + (extras.firstPosterFree ? "Your first one is on the house." : "Left: \(extras.posters)."),
                         id: Extras.postersID, tint: tint, owned: false)
                 }
                 .background(Color(white: 0.07), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(.white.opacity(0.06)))
 
                 Text("EYE PACKS").font(.system(size: 12, weight: .semibold)).tracking(1.6).foregroundStyle(.white.opacity(0.4))
-                Text("A new iris and a look to go with it, plus a matching app icon. Yours without Pro.").font(.system(size: 13)).foregroundStyle(.white.opacity(0.5))
+                Text("A new iris and a look to go with it, plus a matching app icon. Yours without Pro, and all included with Plus.").font(.system(size: 13)).foregroundStyle(.white.opacity(0.5))
                 LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
                     ForEach(Extras.packs) { p in packCard(p) }
                 }
@@ -202,6 +224,7 @@ struct ShopSheet: View {
         .foregroundStyle(.white)
         .background(Color.black.ignoresSafeArea())
         .task { await extras.loadProducts() }
+        .sheet(isPresented: $plusSheet) { PaywallView(reason: .packs).presentationBackground(.black).presentationCornerRadius(34) }
     }
 
     private var divider: some View { Rectangle().fill(.white.opacity(0.07)).frame(height: 1).padding(.leading, 62) }

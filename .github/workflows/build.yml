@@ -25,7 +25,7 @@ jobs:
           echo "UDID=$udid" >> "$GITHUB_ENV"
           xcodebuild build -project Minder.xcodeproj -scheme Minder -configuration Debug             -destination "id=$udid" -derivedDataPath dd CODE_SIGNING_ALLOWED=NO | xcpretty
       - name: Screenshots
-        timeout-minutes: 15
+        timeout-minutes: 25
         run: |
           set -x
           rt=$(xcrun simctl list runtimes | grep -oE "com.apple.CoreSimulator.SimRuntime.iOS-[0-9-]+" | sort -V | tail -1)
@@ -56,18 +56,19 @@ jobs:
           done <<'LIST'
           idle|-shot idle
           work|-shot work
-          focus|-shot focus
-          widgets|-shot widgets
-          rescue|-shot rescue
-          shop|-shot shop
-          poster|-shot poster
-          after|-shot after
-          break|-shot break
-          settings|-shot settings
-          paywall|-shot paywall
-          galaxy|-shot idle -preset Galaxy -expr curious
-          happy|-shot work -preset Crush -expr happy
           suspicious|-shot work -expr suspicious
+          widgets|-shot widgets
+          insights|-shot insights
+          focus|-shot focus
+          month|-shot month
+          break|-shot break
+          galaxy|-shot idle -preset Galaxy -expr curious
+          poster|-shot poster
+          happy|-shot work -preset Crush -expr happy
+          settings|-shot settings
+          shop|-shot shop
+          paywall|-shot paywall
+          plus|-shot plus -locked
           LIST
       - uses: actions/upload-artifact@v4
         if: always()

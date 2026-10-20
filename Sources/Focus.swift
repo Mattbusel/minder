@@ -3,7 +3,9 @@ import SwiftUI
 /// The numbers: today against the goal, the streak (and saving it), the week, where the time went.
 /// The long view (twelve weeks, every session, CSV) is Pro.
 struct FocusSheet: View {
+    var jump: String? = nil
     @Environment(Pro.self) private var pro
+    @Environment(Plus.self) private var plus
     @Environment(Extras.self) private var extras
     @Environment(\.dismiss) private var dismiss
     @AppStorage("goalMinutes", store: Shared.defaults) private var goal = 60
@@ -13,6 +15,7 @@ struct FocusSheet: View {
     @State private var shop = false
     @State private var tick = 0
     @State private var csvURL: URL? = nil
+    @State private var month = false
 
     var body: some View {
         let tint = look.iris
@@ -26,6 +29,10 @@ struct FocusSheet: View {
                         Image(systemName: "xmark").font(.system(size: 14, weight: .bold)).foregroundStyle(.white.opacity(0.7))
                             .frame(width: 34, height: 34).background(.white.opacity(0.1), in: Circle())
                     }.accessibilityLabel("Close")
+                }
+
+                if jump == "insights" {
+                    InsightsCard(tint: tint) { pro.askPlus(.insights) }
                 }
 
                 // Today against the goal.
@@ -55,9 +62,15 @@ struct FocusSheet: View {
 
                 streakCard(tint)
 
+                challengeCard(tint)
+
                 week(tint)
 
                 tags(tint)
+
+                if jump != "insights" {
+                    InsightsCard(tint: tint) { pro.askPlus(.insights) }
+                }
 
                 Button { poster = .today } label: {
                     HStack(spacing: 12) {
@@ -65,7 +78,7 @@ struct FocusSheet: View {
                             .frame(width: 32, height: 32).background(tint.light.opacity(0.13), in: RoundedRectangle(cornerRadius: 9))
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Make a poster of today").font(.system(size: 16, weight: .medium))
-                            Text(extras.firstPosterFree ? "Your first one is free." : "\(extras.posters) poster credit\(extras.posters == 1 ? "" : "s") left").font(.system(size: 13)).foregroundStyle(.white.opacity(0.45))
+                            Text(extras.firstPosterFree ? "Your first one is on the house." : "\(extras.posters) poster credit\(extras.posters == 1 ? "" : "s") left").font(.system(size: 13)).foregroundStyle(.white.opacity(0.45))
                         }
                         Spacer()
                         Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(.white.opacity(0.4))
@@ -80,6 +93,7 @@ struct FocusSheet: View {
         .background(Color.black.ignoresSafeArea())
         .sheet(item: $poster) { k in PosterSheet(kind: k).presentationBackground(.black).presentationCornerRadius(34) }
         .sheet(isPresented: $shop) { ShopSheet().presentationBackground(.black).presentationCornerRadius(34) }
+        .sheet(isPresented: $month) { MonthSheet().presentationBackground(.black).presentationCornerRadius(34) }
         .task {
             let u = URL.temporaryDirectory.appending(path: "Minder focus \(Ledger.key(.now)).csv")
             try? log.csv().write(to: u, atomically: true, encoding: .utf8)
@@ -106,13 +120,34 @@ struct FocusSheet: View {
             } else {
                 HStack(spacing: 8) {
                     Image(systemName: "shield.lefthalf.filled").foregroundStyle(tint.light)
-                    Text(extras.freeShieldLeft ? "This month's free Streak Shield is ready" : "Free shield used this month")
+                    Text(extras.freeShieldLeft ? "This month's Streak Shield is ready" : "This month's shield is used")
                     Spacer()
                     if extras.shields > 0 { Text("+\(extras.shields) banked").foregroundStyle(tint.light) }
                 }.font(.system(size: 13, weight: .medium)).foregroundStyle(.white.opacity(0.6))
             }
         }
         .padding(18).card()
+    }
+
+    private func challengeCard(_ tint: IrisStyle) -> some View {
+        let c = Challenge.current()
+        return Button { Haptics.tap(); month = true } label: {
+            HStack(spacing: 14) {
+                ZStack {
+                    GoalRing(fraction: c.fraction, tint: tint, width: 5)
+                    Image(systemName: c.done ? "trophy.fill" : "flag.checkered").font(.system(size: 14, weight: .semibold)).foregroundStyle(tint.light)
+                }.frame(width: 44, height: 44)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("\(Date.now.formatted(.dateTime.month(.wide))) challenge: \(c.title.lowercased())").font(.system(size: 15, weight: .medium))
+                    Text(c.done ? "Done this month." : "\(min(c.progress(), c.target)) of \(c.target) \(c.unit). Plus the Eye of the Month.")
+                        .font(.system(size: 13)).foregroundStyle(.white.opacity(0.5))
+                }
+                Spacer(minLength: 4)
+                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(.white.opacity(0.4))
+            }
+            .padding(16).card()
+        }
+        .buttonStyle(.plain)
     }
 
     private func week(_ tint: IrisStyle) -> some View {
@@ -225,11 +260,13 @@ struct Heatmap: View {
             let cal = Calendar.current
             let cols = 12, cell = min(size.width / CGFloat(cols), size.height / 7), s = cell - 3
             let todayDow = (cal.component(.weekday, from: .now) + 5) % 7
+            let shielded = Ledger.shielded
+            let all = Ledger.all
             for c in 0..<cols { for r in 0..<7 {
                 let back = (cols - 1 - c) * 7 + (todayDow - r)
                 guard back >= 0, let day = cal.date(byAdding: .day, value: -back, to: .now) else { continue }
-                let v = Ledger.seconds(on: day)
-                let shield = Ledger.shielded.contains(Ledger.key(day))
+                let v = all[Ledger.key(day)] ?? 0
+                let shield = shielded.contains(Ledger.key(day))
                 let col: Color = shield ? Color(red: 0.55, green: 0.75, blue: 1.0).opacity(0.7) : v >= goal ? tint.light : v > 0 ? tint.light.opacity(0.18 + 0.5 * min(1, v / goal)) : .white.opacity(0.07)
                 ctx.fill(Path(roundedRect: CGRect(x: CGFloat(c) * cell, y: CGFloat(r) * cell, width: s, height: s), cornerRadius: 3), with: .color(col))
             } }
@@ -254,7 +291,7 @@ struct RescueCard: View {
                 .font(.system(size: 13)).foregroundStyle(.white.opacity(0.5)).fixedSize(horizontal: false, vertical: true)
             if extras.freeShieldLeft || extras.shields > 0 {
                 Button { if extras.useShield(on: day) { Haptics.success(); done() } } label: {
-                    Label(extras.freeShieldLeft ? "Use this month's free shield" : "Use a banked shield (\(extras.shields))", systemImage: "shield.lefthalf.filled")
+                    Label(extras.freeShieldLeft ? "Use this month's shield" : "Use a banked shield (\(extras.shields))", systemImage: "shield.lefthalf.filled")
                         .font(.system(size: 15, weight: .semibold, design: .rounded)).foregroundStyle(.black)
                         .frame(maxWidth: .infinity).frame(height: 46).background(tint.light, in: Capsule())
                 }.buttonStyle(.plain)
@@ -294,7 +331,7 @@ struct PosterSheet: View {
                 Button { dismiss() } label: {
                     Image(systemName: "xmark").font(.system(size: 14, weight: .bold)).foregroundStyle(.white.opacity(0.7))
                         .frame(width: 34, height: 34).background(.white.opacity(0.1), in: Circle())
-                }
+                }.accessibilityLabel("Close")
             }
             PosterView(kind: kind, look: look)
                 .frame(width: 300, height: 400)
@@ -308,7 +345,7 @@ struct PosterSheet: View {
                 }
             } else if extras.firstPosterFree || extras.posters > 0 {
                 Button { if extras.spendPoster() { render(); spent = true; Haptics.success() } } label: {
-                    Text(extras.firstPosterFree ? "Make it, your first one is free" : "Make it, uses 1 of \(extras.posters)").font(.system(size: 17, weight: .semibold, design: .rounded)).foregroundStyle(.black)
+                    Text(extras.firstPosterFree ? "Make the poster" : "Make it, uses 1 of \(extras.posters)").font(.system(size: 17, weight: .semibold, design: .rounded)).foregroundStyle(.black)
                         .frame(maxWidth: .infinity).frame(height: 54).background(tint.light, in: Capsule())
                 }.buttonStyle(.plain)
             } else {
@@ -376,30 +413,38 @@ struct StaticEyes: View {
 
 // MARK: - Screenshot only
 
-/// The widgets and the Live Activity on a Lock Screen, for the App Store screenshot.
+/// The widgets, the Live Activity and the control on a Lock Screen, for the App Store screenshot.
 struct WidgetShowcase: View {
     @State private var look = Look.shared
     var body: some View {
-        let snap = FocusSnapshot(today: Ledger.today, goal: 3600, streak: Ledger.streak, week: Ledger.week, iris: look.iris, pro: true)
+        let snap = FocusSnapshot(today: Ledger.today, goal: 7200, streak: Ledger.streak, week: Ledger.week, iris: look.iris, pro: true)
         ZStack {
             LinearGradient(colors: [look.iris.dark, Color(white: 0.04), .black], startPoint: .top, endPoint: .bottom).ignoresSafeArea()
-            VStack(spacing: 24) {
+            VStack(spacing: 20) {
                 VStack(spacing: 2) {
                     Text(Date.now.formatted(.dateTime.weekday(.wide).month(.wide).day())).font(.system(size: 17, weight: .semibold)).foregroundStyle(.white.opacity(0.8))
                     Text("9:41").font(.system(size: 88, weight: .bold, design: .rounded)).foregroundStyle(.white.opacity(0.92))
-                }.padding(.top, 60)
+                }.padding(.top, 40)
+                HStack(spacing: 14) {
+                    LockCircularView(snap: snap).frame(width: 64, height: 64).foregroundStyle(.white)
+                        .padding(4).background(.white.opacity(0.12), in: Circle())
+                    LockRectView(snap: snap).foregroundStyle(.white).frame(width: 170, height: 64)
+                        .padding(.horizontal, 10).background(.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                }
                 FocusActivityView(iris: look.iris, state: .init(start: .now.addingTimeInterval(-(23 * 60 + 14)), planned: 50, tag: "Write"))
                     .background(.black.opacity(0.85), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
                     .padding(.horizontal, 14)
                 HStack(spacing: 16) {
                     widget(TodayWidgetView(snap: snap), w: 170, h: 170)
-                    VStack(spacing: 14) {
-                        ForEach(0..<2, id: \.self) { _ in
-                            HStack(spacing: 14) { ForEach(0..<2, id: \.self) { _ in RoundedRectangle(cornerRadius: 16, style: .continuous).fill(.white.opacity(0.12)).frame(width: 64, height: 64) } }
-                        }
-                    }
+                    VStack(spacing: 10) {
+                        Image(systemName: "eye.fill").font(.system(size: 30, weight: .semibold)).foregroundStyle(.black)
+                            .frame(width: 92, height: 92).background(look.iris.light, in: Circle())
+                            .shadow(color: look.iris.light.opacity(0.5), radius: 18)
+                        Text("Start focusing").font(.system(size: 13, weight: .semibold)).foregroundStyle(.white.opacity(0.8))
+                        Text("CONTROL CENTER").font(.system(size: 9, weight: .bold)).tracking(1.2).foregroundStyle(.white.opacity(0.4))
+                    }.frame(width: 170, height: 170)
                 }
-                widget(WeekWidgetView(snap: snap), w: 364, h: 170)
+                widget(WeekWidgetView(snap: snap), w: 356, h: 170)
                 Spacer()
             }
         }

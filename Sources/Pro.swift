@@ -19,9 +19,13 @@ final class Pro {
     /// Looks anyone can pick. The rest of the presets, the dice and every knob are Pro.
     static let freePresets: Set<String> = ["Classic", "Robot", "Cat"]
 
-    enum Reason: String, Identifiable { case designer, face, settings, stats, sound, tags; var id: String { rawValue } }
+    enum Reason: String, Identifiable { case designer, face, settings, stats, sound, tags, plus, month, insights, packs, backup; var id: String { rawValue } }
 
-    private(set) var unlocked: Bool
+    /// The one-time purchase (or a grandfathered paid download). Never taken away by anything Plus does.
+    private(set) var purchased: Bool
+    /// Minder Plus includes everything in Pro while it is active.
+    var viaPlus = false { didSet { if viaPlus != oldValue { Shared.pro = unlocked } } }
+    var unlocked: Bool { purchased || viaPlus }
     private(set) var grandfathered = false
     private(set) var product: Product?
     var busy = false
@@ -35,9 +39,9 @@ final class Pro {
     /// `forced` is for screenshots and the review recording, which must not touch StoreKit.
     init(forced: Bool? = nil) {
         self.forced = forced != nil
-        if let forced { unlocked = forced; return }
-        unlocked = UserDefaults.standard.bool(forKey: key)
-        Shared.pro = unlocked
+        if let forced { purchased = forced; return }
+        purchased = UserDefaults.standard.bool(forKey: key)
+        Shared.pro = purchased
         updates = Task { [weak self] in
             for await result in Transaction.updates { await self?.apply(result) }
         }
@@ -47,6 +51,8 @@ final class Pro {
     var price: String { product?.displayPrice ?? "$2.99" }
 
     func ask(_ why: Reason) { if !unlocked { paywall = why } }
+    /// Plus things are offered to Pro owners too.
+    func askPlus(_ why: Reason) { paywall = why }
 
     func refresh() async {
         guard !forced else { return }
@@ -72,7 +78,7 @@ final class Pro {
             switch try await product.purchase() {
             case .success(let result):
                 await apply(result)
-                if !unlocked { message = "Apple could not confirm the purchase. Try Restore in a minute." }
+                if !purchased { message = "Apple could not confirm the purchase. Try Restore in a minute." }
             case .pending:
                 message = "Waiting for approval. Pro unlocks by itself once it is approved."
             case .userCancelled:
@@ -95,7 +101,7 @@ final class Pro {
             return
         }
         await refresh()
-        message = unlocked ? "Pro is unlocked. Welcome back." : "No Pro purchase found on this Apple ID."
+        message = purchased ? "Pro is unlocked. Welcome back." : "No Pro purchase found on this Apple ID."
     }
 
     private func apply(_ result: VerificationResult<StoreKit.Transaction>) async {
@@ -105,179 +111,18 @@ final class Pro {
     }
 
     private func grant() {
-        guard !unlocked else { return }
-        withAnimation(.spring(response: 0.45, dampingFraction: 0.7)) { unlocked = true }
+        guard !purchased else { return }
+        withAnimation(.spring(response: 0.45, dampingFraction: 0.7)) { purchased = true }
         paywall = nil
         UserDefaults.standard.set(true, forKey: key)
         Shared.pro = true
     }
 
     private func revoke() {
-        unlocked = false
+        purchased = false
         UserDefaults.standard.set(false, forKey: key)
-        Shared.pro = false
+        Shared.pro = unlocked
     }
 }
 
-// MARK: - Paywall
-
-/// Black glass, a pair of eyes trying on every look, one price.
-struct PaywallView: View {
-    @Environment(Pro.self) private var pro
-    @Environment(\.dismiss) private var dismiss
-    let reason: Pro.Reason
-    @State private var look = Look.scratch()
-    @State private var brain = Brain()
-    @State private var presetIndex = 0
-
-    private let parade = ["Crush", "Night owl", "Grump", "Cat", "Robot"]
-
-    var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 22) {
-                HStack {
-                    Text("MINDER PRO").font(.system(size: 12, weight: .semibold)).tracking(3).foregroundStyle(.white.opacity(0.45))
-                    Spacer()
-                    Button { dismiss() } label: {
-                        Image(systemName: "xmark").font(.system(size: 14, weight: .bold)).foregroundStyle(.white.opacity(0.7))
-                            .frame(width: 34, height: 34).background(.white.opacity(0.1), in: Circle())
-                    }.accessibilityLabel("Close")
-                }
-
-                EyesCanvas(brain: brain, look: look, zoom: 1.6)
-                    .frame(height: 230)
-                    .allowsHitTesting(false)
-                    .overlay(alignment: .bottom) {
-                        Text(parade[presetIndex]).font(.system(size: 13, weight: .semibold, design: .rounded))
-                            .foregroundStyle(.white.opacity(0.8)).padding(.horizontal, 12).frame(height: 28)
-                            .background(.white.opacity(0.08), in: Capsule())
-                            .contentTransition(.opacity)
-                    }
-
-                Text(headline).font(.system(size: 32, weight: .semibold, design: .rounded)).foregroundStyle(.white)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                VStack(spacing: 0) {
-                    feature("paintpalette.fill", "Design your own eyes", "Every look and every knob: iris colours, odd eyes, shapes, pupils, brows, whites, size, glow and the dice.")
-                    Rectangle().fill(.white.opacity(0.07)).frame(height: 1).padding(.leading, 60)
-                    feature("face.dashed", "Follow my face", "The front camera keeps the eyes on you and notices when you wander off. Nothing is recorded or leaves the phone.")
-                    Rectangle().fill(.white.opacity(0.07)).frame(height: 1).padding(.leading, 60)
-                    feature("square.grid.3x3.fill", "Twelve weeks, every session", "A heatmap against your goal, every session with its tag, all-time totals and a CSV export.")
-                    Rectangle().fill(.white.opacity(0.07)).frame(height: 1).padding(.leading, 60)
-                    feature("waveform.path", "Pink noise and ocean", "Two more focus sounds, made on the phone. Brown noise is free.")
-                    Rectangle().fill(.white.opacity(0.07)).frame(height: 1).padding(.leading, 60)
-                    feature("tag.fill", "Your own tags and the Week widget", "Tag sessions your way, and see the week on your Home Screen.")
-                }
-                .background(Color(white: 0.07), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(.white.opacity(0.06)))
-
-                HStack(alignment: .firstTextBaseline) {
-                    Text(pro.price).font(.system(size: 40, weight: .light, design: .rounded)).foregroundStyle(.white)
-                    Text("once").font(.system(size: 17, weight: .medium, design: .rounded)).foregroundStyle(look.iris.light)
-                    Spacer()
-                    Text("No subscription").font(.system(size: 13, weight: .semibold)).foregroundStyle(.white.opacity(0.5))
-                }
-
-                if let m = pro.message {
-                    Text(m).font(.system(size: 14, weight: .medium)).foregroundStyle(look.iris.light)
-                        .frame(maxWidth: .infinity).multilineTextAlignment(.center)
-                }
-
-                Button { Task { await pro.buy() } } label: {
-                    Text(pro.busy ? "One moment" : "Unlock Pro for \(pro.price)")
-                        .font(.system(size: 18, weight: .semibold, design: .rounded)).foregroundStyle(.black)
-                        .frame(maxWidth: .infinity).frame(height: 60)
-                        .background(LinearGradient(colors: [look.iris.light, look.iris.dark], startPoint: .top, endPoint: .bottom), in: Capsule())
-                        .shadow(color: look.iris.light.opacity(0.4), radius: 18)
-                }
-                .buttonStyle(.plain).disabled(pro.busy)
-
-                HStack {
-                    Button { Task { await pro.restore() } } label: {
-                        Label("Restore purchase", systemImage: "arrow.clockwise").font(.system(size: 15, weight: .medium))
-                    }
-                    Spacer()
-                    Button("Not now") { dismiss() }.font(.system(size: 15, weight: .medium))
-                }
-                .foregroundStyle(.white.opacity(0.7))
-
-                Text("One payment, yours for good. Family Sharing works. The eyes, slide to focus, the timer, your goal and streak, tags, breaks, the Lock Screen timer, the Today widget, brown noise, the check-in and the pick-up suspicion stay free.")
-                    .font(.system(size: 12)).foregroundStyle(.white.opacity(0.35)).fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(22)
-        }
-        .foregroundStyle(.white)
-        .background(Color.black.ignoresSafeArea())
-        .task {
-            // The eyes try on looks while you read.
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(1.8))
-                presetIndex = (presetIndex + 1) % parade.count
-                withAnimation(.spring(duration: 0.4)) { Look.presets.first { $0.id == parade[presetIndex] }?.apply(look) }
-                brain.touched(at: CGPoint(x: Double.random(in: -0.6...0.6), y: Double.random(in: -0.3...0.3)), t: Date.now.timeIntervalSinceReferenceDate)
-            }
-        }
-        .onAppear { Look.presets.first { $0.id == parade[0] }?.apply(look) }
-        .onChange(of: pro.unlocked) { _, now in if now { dismiss() } }
-    }
-
-    var headline: String {
-        switch reason {
-        case .face: return "Eyes that follow you."
-        case .stats: return "See the long game."
-        case .sound: return "More to focus to."
-        case .tags: return "Tag it your way."
-        default: return "Make them yours."
-        }
-    }
-
-    private func feature(_ icon: String, _ title: String, _ body: String) -> some View {
-        HStack(alignment: .top, spacing: 14) {
-            Image(systemName: icon).font(.system(size: 15, weight: .medium))
-                .foregroundStyle(look.iris.light)
-                .frame(width: 30, height: 30)
-                .background(look.iris.light.opacity(0.13), in: RoundedRectangle(cornerRadius: 9))
-            VStack(alignment: .leading, spacing: 3) {
-                Text(title).font(.system(size: 16, weight: .medium))
-                Text(body).font(.system(size: 13)).foregroundStyle(.white.opacity(0.45)).fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-    }
-}
-
-/// Pro status in Settings, with Restore always in reach.
-struct ProCard: View {
-    @Environment(Pro.self) private var pro
-    let tint: IrisStyle
-    var body: some View {
-        HStack(spacing: 14) {
-            Image(systemName: pro.unlocked ? "checkmark" : "eye.fill").font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(pro.unlocked ? .black : tint.light)
-                .frame(width: 40, height: 40)
-                .background(pro.unlocked ? AnyShapeStyle(tint.light) : AnyShapeStyle(tint.light.opacity(0.13)), in: Circle())
-            VStack(alignment: .leading, spacing: 2) {
-                Text(pro.unlocked ? "Minder Pro" : "Minder Pro, \(pro.price) once").font(.system(size: 16, weight: .medium))
-                Text(pro.unlocked ? (pro.grandfathered ? "Unlocked. Thanks for buying Minder early." : "Unlocked. Thank you.") : "Every look, Follow my face, twelve weeks of history, more sounds.")
-                    .font(.system(size: 13)).foregroundStyle(.white.opacity(0.45))
-                if let m = pro.message, pro.paywall == nil { Text(m).font(.system(size: 12, weight: .medium)).foregroundStyle(tint.light) }
-            }
-            Spacer(minLength: 4)
-            if !pro.unlocked {
-                VStack(alignment: .trailing, spacing: 8) {
-                    Button { pro.ask(.settings) } label: {
-                        Text("See").font(.system(size: 14, weight: .semibold, design: .rounded)).foregroundStyle(.black)
-                            .padding(.horizontal, 16).frame(height: 32).background(tint.light, in: Capsule())
-                    }.buttonStyle(.plain)
-                    Button { Task { await pro.restore() } } label: {
-                        Text("Restore").font(.system(size: 12, weight: .medium)).foregroundStyle(.white.opacity(0.5)).underline()
-                    }.buttonStyle(.plain)
-                }
-            }
-        }
-        .padding(18)
-        .background(Color(white: 0.07), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(.white.opacity(0.06)))
-    }
-}
+// MARK: - Paywall: see Paywall.swift

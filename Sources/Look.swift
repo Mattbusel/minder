@@ -72,6 +72,16 @@ final class Look {
         }
     }
 
+    /// The look that comes with each month's Eye of the Month (Minder Plus).
+    static func monthPreset(_ id: String) -> Preset? {
+        guard let i = IrisStyle.monthly.firstIndex(where: { $0.id == id }) else { return nil }
+        let o: [EyeOutline] = [.round, .tall, .almond, .round, .tall, .round, .almond, .round, .almond, .round, .almond, .tall]
+        let p: [PupilStyle] = [.star, .heart, .round, .round, .heart, .star, .star, .cat, .round, .cat, .round, .star]
+        let b: [BrowStyle] = [.thin, .thin, .bold, .none, .thin, .bold, .none, .thin, .bushy, .bushy, .bold, .thin]
+        let w: [ScleraStyle] = [.classic, .classic, .classic, .tired, .classic, .classic, .void, .classic, .classic, .void, .tired, .classic]
+        return Preset(id: IrisStyle.monthly[i].name) { l in l.set(id, o[i], p[i], b[i], w[i], lashes: i % 2 == 1, glow: [0.9, 0.7, 0.5, 0.4, 0.6, 1, 1, 0.8, 0.5, 1, 0.6, 0.7][i]) }
+    }
+
     private func set(_ iris: String, _ o: EyeOutline, _ p: PupilStyle, _ b: BrowStyle, _ s: ScleraStyle, lashes: Bool, glow: Double) {
         irisID = iris; outline = o; pupil = p; brow = b; sclera = s; self.lashes = lashes; self.glow = glow
         oddEyes = false; size = 1; spacing = 1

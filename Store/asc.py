@@ -70,12 +70,16 @@ def call(method: str, path: str, body=None, params=None, quiet=False):
         "Authorization": f"Bearer {token()}",
         "Content-Type": "application/json",
     }
-    for attempt in range(3):
+    for attempt in range(8):
         response = requests.request(
             method, url, headers=headers, json=body, params=params, timeout=60
         )
         # Apple hands out the odd 401 for a valid token; a fresh one goes through.
-        if response.status_code != 401:
+        # 429: the key is shared by several jobs; back off and retry.
+        if response.status_code == 429:
+            time.sleep(20 * (attempt + 1))
+            continue
+        if response.status_code != 401 or attempt >= 2:
             break
         time.sleep(2)
         headers["Authorization"] = f"Bearer {token()}"
